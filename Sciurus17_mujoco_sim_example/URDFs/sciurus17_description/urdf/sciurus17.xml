@@ -1,0 +1,314 @@
+<mujoco model="sciurus17">
+  <option iterations="50" timestep="0.001" solver="Newton" gravity="0 0 -9.81" />
+  <!-- <option iterations="50" timestep="0.001" solver="PGS" gravity="0 0 0" /> -->
+
+  <compiler angle="radian" meshdir="meshes" eulerseq="zyx" autolimits="true" />
+
+  <visual>
+    <global offwidth="1280" offheight="720" />
+    <!-- optional quality -->
+    <quality offsamples="4" shadowsize="2048"/>
+  </visual>
+
+  <default>
+   <joint limited="true" damping="0.01" armature="0.01" frictionloss="0.01" />
+    <!-- <joint limited="true" damping="0.01" armature="0.01" frictionloss="0.01" solimplimit="0.9 0.95 0.001" solreflimit="0.002 1" /> -->
+    <geom condim="4" contype="1" conaffinity="15" friction="0.9 0.2 0.2" solref="0.001 2" />
+    <motor ctrllimited="true"/>
+    <equality solref="0.001 2" />
+    <default class="visualgeom">
+      <geom material="visualgeom" condim="1" contype="0" conaffinity="0" />
+    </default>
+  </default>
+
+  <asset>
+    <mesh name="Base" content_type="model/stl" file="collision/Base.stl" />
+    <mesh name="Body" content_type="model/stl" file="collision/Body.stl" />
+    <mesh name="Neck1" content_type="model/stl" file="collision/Neck1.stl" />
+    <mesh name="Neck2" content_type="model/stl" file="collision/Neck2.stl" />
+    <mesh name="R_Link1" content_type="model/stl" file="collision/R_Link1.stl" />
+    <mesh name="R_Link2" content_type="model/stl" file="collision/R_Link2.stl" />
+    <mesh name="L_Link3" content_type="model/stl" file="collision/L_Link3.stl" scale="1 -1 1" />
+    <mesh name="R_Link4" content_type="model/stl" file="collision/R_Link4.stl" />
+    <mesh name="R_Link5" content_type="model/stl" file="collision/R_Link5.stl" />
+    <mesh name="R_Link6" content_type="model/stl" file="collision/R_Link6.stl" />
+    <mesh name="R_Link7" content_type="model/stl" file="collision/R_Link7.stl" />
+    <mesh name="R_HandA" content_type="model/stl" file="collision/R_HandA.stl" />
+    <mesh name="R_HandB" content_type="model/stl" file="collision/R_HandB.stl" />
+    <mesh name="L_Link1" content_type="model/stl" file="collision/L_Link1.stl" />
+    <mesh name="L_Link2" content_type="model/stl" file="collision/L_Link2.stl" scale="-1 1 -1" />
+    <mesh name="L_Link31" content_type="model/stl" file="collision/L_Link3.stl" />
+    <mesh name="L_Link4" content_type="model/stl" file="collision/L_Link4.stl" />
+    <mesh name="L_Link5" content_type="model/stl" file="collision/L_Link5.stl" />
+    <mesh name="L_Link6" content_type="model/stl" file="collision/L_Link6.stl" />
+    <mesh name="L_Link7" content_type="model/stl" file="collision/L_Link7.stl" />
+    <mesh name="L_HandA" content_type="model/stl" file="collision/L_HandA.stl" />
+    <mesh name="L_HandB" content_type="model/stl" file="collision/L_HandB.stl" />
+    <mesh name="Base_visual" content_type="model/stl" file="visual/Base.stl" />
+    <mesh name="Body_visual" content_type="model/stl" file="visual/Body.stl" />
+    <mesh name="Neck1_visual" content_type="model/stl" file="visual/Neck1.stl" />
+    <mesh name="Neck2_visual" content_type="model/stl" file="visual/Neck2.stl" />
+    <mesh name="R_Link1_visual" content_type="model/stl" file="visual/R_Link1.stl" />
+    <mesh name="R_Link2_visual" content_type="model/stl" file="visual/R_Link2.stl" />
+    <mesh name="L_Link3_visual" content_type="model/stl" file="visual/L_Link3.stl" scale="1 -1 1" />
+    <mesh name="R_Link4_visual" content_type="model/stl" file="visual/R_Link4.stl" />
+    <mesh name="R_Link5_visual" content_type="model/stl" file="visual/R_Link5.stl" />
+    <mesh name="R_Link6_visual" content_type="model/stl" file="visual/R_Link6.stl" />
+    <mesh name="R_Link7_visual" content_type="model/stl" file="visual/R_Link7.stl" />
+    <mesh name="R_HandA_visual" content_type="model/stl" file="visual/R_HandA.stl" />
+    <mesh name="R_HandB_visual" content_type="model/stl" file="visual/R_HandB.stl" />
+    <mesh name="L_Link1_visual" content_type="model/stl" file="visual/L_Link1.stl" />
+    <mesh name="L_Link2_visual" content_type="model/stl" file="visual/L_Link2.stl" scale="-1 1 -1" />
+    <mesh name="L_Link31_visual" content_type="model/stl" file="visual/L_Link3.stl" />
+    <mesh name="L_Link4_visual" content_type="model/stl" file="visual/L_Link4.stl" />
+    <mesh name="L_Link5_visual" content_type="model/stl" file="visual/L_Link5.stl" />
+    <mesh name="L_Link6_visual" content_type="model/stl" file="visual/L_Link6.stl" />
+    <mesh name="L_Link7_visual" content_type="model/stl" file="visual/L_Link7.stl" />
+    <mesh name="L_HandA_visual" content_type="model/stl" file="visual/L_HandA.stl" />
+    <mesh name="L_HandB_visual" content_type="model/stl" file="visual/L_HandB.stl" />
+    <material name="matplane" rgba="0.5 0.5 0.5 1"/>
+    <material name="visualgeom" rgba="0.5 0.9 0.2 1" />
+  </asset>
+
+  <worldbody>
+    <light directional="true" diffuse="0.6 0.6 0.6" specular="0.1 0.1 0.1" pos="0.1 0 5.0" dir="0 0 -1" castshadow="false" />
+    <light directional="true" diffuse="0.6 0.6 0.6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1"  castshadow="false" />
+    <geom name="ground" type="plane" pos="0 0 0" size="1 1 0.001" quat="1 0 0 0" material="matplane" condim="3" conaffinity="0" />
+    <camera name="fixed_side" pos="0 -2.0 0.54" xyaxes="1 0 0 0 0 1" />
+    <camera name="fixed" pos="2.0 0 0.54" xyaxes="0 1 0 0 0 1"/>
+    <camera name="track" mode="trackcom" pos="0 -3.0 0.54" xyaxes="1 0 0 0 0 1" />
+    <body name="root" pos="0 0 0.04082744079349866" quat="1 0 0 0">
+    <!-- <body name="root" pos="0 0 0.04" quat="-0.7071 0 0 0.7071"> -->
+      <!-- <freejoint name="root" /> -->
+      <site name="imu" size="0.01" pos="0 0 0" />
+      <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="Base_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+      <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="Base" />
+      <body name="body_link" pos="0 0 0.1315">
+        <inertial pos="0.0571122 0.000371986 0.238228" quat="0.97966 -0.00190258 0.200656 -0.000624349" mass="1.48299" diaginertia="0.0172283 0.01397 0.00670091" />
+        <joint name="waist_yaw_joint" type="hinge" pos="0 0 0" axis="0 0 1" range="-1.91986 1.91986" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8"/>
+        <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="Body_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+        <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="Body" />
+        <geom size="0.003 0.001" pos="0.114576 0 0.217659" quat="0.122788 -0.696364 0.696364 -0.122788" type="cylinder" rgba="0.9 0.9 0.9 1" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+        <geom type="cylinder" size="0.003 0.001" rgba="0.9 0.9 0.9 1" pos="0.114576 0 0.217659" quat="0.122788 -0.696364 0.696364 -0.122788" />
+        <body name="neck_yaw_link" pos="0.08083 0 0.3395">
+          <inertial pos="-2.2e-05 2.9e-05 0.04086" quat="0.707017 0.00342725 -0.000495393 0.707188" mass="0.168" diaginertia="6.65235e-05 6.31438e-05 3.27427e-05" />
+          <joint name="neck_yaw_joint" pos="0 0 0" axis="0 0 1" range="-2.87979 2.87979" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+          <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="Neck1_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+          <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="Neck1" />
+          <body name="neck_pitch_link" pos="0 0 0.054">
+            <inertial pos="0.0199902 -0.00014735 0.0786892" quat="-0.0818184 0.648322 0.283413 0.701899" mass="0.312229" diaginertia="0.00106669 0.00106012 0.000931604" />
+            <joint name="neck_pitch_joint" pos="0 0 0" axis="0 -1 0" range="-1.5708 0.959931" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+            <geom pos="0 0 0" quat="0.707105 0.707108 0 0" type="mesh" rgba="0.9 0.9 0.9 1" mesh="Neck2_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+            <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="Neck2" pos="0 0 0" quat="0.707105 0.707108 0 0" />
+            <geom size="0.003 0.001" pos="0.081785 0.02 0.091" type="cylinder" rgba="0.9 0.9 0.9 1" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+            <geom type="cylinder" size="0.003 0.001" rgba="0.9 0.9 0.9 1" pos="0.081785 0.02 0.091" />
+          </body>
+        </body>
+        <body name="r_link1" pos="0.08083 -0.0965 0.2885">
+          <inertial pos="-0.000656 -0.046367 -0.000264" quat="0.706331 -0.00299694 -0.00170363 0.707873" mass="0.258" diaginertia="0.000179208 0.000176221 8.79459e-05" />
+          <joint name="r_arm_joint1" pos="0 0 0" axis="0 -1 0" range="-1.5708 1.5708" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+          <geom quat="0.707105 0.707108 0 0" type="mesh" rgba="0.9 0.9 0.9 1" mesh="R_Link1_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+          <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="R_Link1" quat="0.707105 0.707108 0 0" />
+          <body name="r_link2" pos="0 -0.064 0">
+            <inertial pos="-0.000185 -0.03396 -3.3e-05" quat="0.712444 0.701687 0.00482118 -0.00597546" mass="0.134" diaginertia="0.000172054 0.000136916 9.88251e-05" />
+            <joint name="r_arm_joint2" pos="0 0 0" axis="-1 0 0" range="-1.5708 0" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+            <geom quat="0.707105 0 0.707108 0" type="mesh" rgba="0.9 0.9 0.9 1" mesh="R_Link2_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+            <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="R_Link2" quat="0.707105 0 0.707108 0" />
+            <body name="r_link3" pos="0 -0.065 0">
+              <inertial pos="-0.013791 -0.113391 0.000245" quat="0.702756 0.0115496 0.0140112 0.7112" mass="0.443" diaginertia="0.00241475 0.00233899 0.000233529" />
+              <joint name="r_arm_joint3" pos="0 0 0" axis="0 -1 0" range="-1.5708 1.5708" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+              <geom pos="0 0 0" quat="0.707105 0.707108 0 0" type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link3_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+              <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link3" pos="0 0 0" quat="0.707105 0.707108 0 0" />
+              <body name="r_link4" pos="0 -0.185 0">
+                <inertial pos="-0.008881 -0.075749 3.8e-05" quat="0.705174 0.708476 -0.0243832 0.0140432" mass="0.238" diaginertia="0.000603393 0.000598149 0.000143046" />
+                <joint name="r_arm_joint4" pos="0 0 0" axis="0 0 1" range="0 2.74017" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+                <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="R_Link4_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="R_Link4" />
+                <body name="r_link5" pos="0 -0.121 0">
+                  <inertial pos="0.0135315 -0.0703693 -0.000303996" quat="0.956717 0.0184782 0.0683666 -0.282272" mass="0.224003" diaginertia="0.000301471 0.000287415 0.000121797" />
+                  <joint name="r_arm_joint5" pos="0 0 0" axis="0 -1 0" range="-1.5708 1.5708" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+                  <geom quat="0.707105 0.707108 0 0" type="mesh" rgba="0.9 0.9 0.9 1" mesh="R_Link5_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                  <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="R_Link5" quat="0.707105 0.707108 0 0" />
+                  <geom size="0.001 0.0005" pos="0.0467 -0.093 0" type="cylinder" rgba="0.9 0.9 0.9 1" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                  <geom type="cylinder" size="0.001 0.0005" rgba="0.9 0.9 0.9 1" pos="0.0467 -0.093 0" />
+                  <body name="r_link6" pos="0 -0.129 0">
+                    <inertial pos="-0.006156 0.003583 0.000755" quat="-0.0349505 0.698733 0.0596802 0.712032" mass="0.14" diaginertia="7.3137e-05 6.10642e-05 3.90949e-05" />
+                    <joint name="r_arm_joint6" pos="0 0 0" axis="0 0 1" range="-2.0944 1.0472" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+                    <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="R_Link6_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                    <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="R_Link6" />
+                    <body name="r_link7" pos="0 -0.0191 0">
+                      <inertial pos="-0.000118 -0.02065 0.001006" quat="-0.118389 0.689674 -0.109628 0.705915" mass="0.121" diaginertia="4.3183e-05 4.18334e-05 3.25941e-05" />
+                      <joint name="r_arm_joint7" pos="0 0 0" axis="0 -1 0" range="-2.96706 2.96706" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+                      <geom quat="0.707105 0.707108 0 0" type="mesh" rgba="0.898438 0 0.0703125 1" mesh="R_Link7_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                      <geom type="mesh" rgba="0.898438 0 0.0703125 1" mesh="R_Link7" quat="0.707105 0.707108 0 0" />
+                      <body name="r_handA_link" pos="0.012 -0.024 0">
+                        <inertial pos="0.002649 -0.026849 0.003757" quat="0.572954 0.819175 -0.0259803 0.000930177" mass="0.0158" diaginertia="1.02041e-05 6.51968e-06 4.81494e-06" />
+                        <joint name="r_hand_joint" pos="0 0 0" axis="0 0 1" range="0 1.50098" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+                        <geom type="mesh" rgba="0.898438 0 0.0703125 1" mesh="R_HandA_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                        <geom type="mesh" rgba="0.898438 0 0.0703125 1" mesh="R_HandA" />
+                      </body>
+                      <body name="r_handB_link" pos="-0.012 -0.024 0">
+                        <inertial pos="-0.002707 -0.030901 0.002845" quat="0.522313 0.850976 0.0526488 0.0160414" mass="0.0139" diaginertia="7.52413e-06 4.48282e-06 3.93832e-06" />
+                        <joint name="r_hand_mimic_joint" pos="0 0 0" axis="0 0 -1" range="0 1.50098" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+                        <geom type="mesh" rgba="0.898438 0 0.0703125 1" mesh="R_HandB_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                        <geom type="mesh" rgba="0.898438 0 0.0703125 1" mesh="R_HandB" />
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="l_link1" pos="0.08083 0.0965 0.2885">
+          <inertial pos="-0.000537 0.04627 -0.00027" quat="0.70809 -0.00126284 -0.00252676 0.706117" mass="0.258" diaginertia="0.00017508 0.00017001 8.52795e-05" />
+          <joint name="l_arm_joint1" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+          <geom quat="0.707105 -0.707108 0 0" type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link1_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+          <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link1" quat="0.707105 -0.707108 0 0" />
+          <body name="l_link2" pos="0 0.064 0">
+            <inertial pos="0.000199 0.033946 -7e-05" quat="0.703198 0.710984 0.00218851 -0.00314145" mass="0.134" diaginertia="0.000172424 0.000137154 9.90717e-05" />
+            <joint name="l_arm_joint2" pos="0 0 0" axis="-1 0 0" range="0 1.5708" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+            <geom quat="0.707105 0 -0.707108 0" type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link2_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+            <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link2" quat="0.707105 0 -0.707108 0" />
+            <body name="l_link3" pos="0 0.065 0">
+              <inertial pos="-0.013943 0.113533 0.000241" quat="0.711159 0.013385 0.0109064 0.702819" mass="0.443" diaginertia="0.00242229 0.00234551 0.000234606" />
+              <joint name="l_arm_joint3" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+              <geom pos="0 0 0" quat="0.707105 -0.707108 0 0" type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link31_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+              <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link31" pos="0 0 0" quat="0.707105 -0.707108 0 0" />
+              <body name="l_link4" pos="0 0.185 0">
+                <inertial pos="-0.008926 0.078626 -5e-06" quat="0.650821 0.64951 -0.27679 0.279208" mass="0.238" diaginertia="0.000533239 0.000532792 0.000130788" />
+                <joint name="l_arm_joint4" pos="0 0 0" axis="0 0 1" range="-2.74017 0" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+                <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link4_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link4" />
+                <body name="l_link5" pos="0 0.121 0">
+                  <inertial pos="0.0137325 0.0711583 -0.000347995" quat="0.959382 -0.0219713 0.0651489 0.273604" mass="0.224003" diaginertia="0.000292763 0.00027979 0.000122482" />
+                  <joint name="l_arm_joint5" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+                  <geom quat="0.707105 -0.707108 0 0" type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link5_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                  <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link5" quat="0.707105 -0.707108 0 0" />
+                  <geom size="0.001 0.0005" pos="0.0467 0.093 0" type="cylinder" rgba="0.9 0.9 0.9 1" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                  <geom type="cylinder" size="0.001 0.0005" rgba="0.9 0.9 0.9 1" pos="0.0467 0.093 0" />
+                  <body name="l_link6" pos="0 0.129 0">
+                    <inertial pos="-0.006173 -0.003627 0.000744" quat="0.03635 0.698659 -0.061087 0.711915" mass="0.14" diaginertia="7.37486e-05 6.15042e-05 3.94735e-05" />
+                    <joint name="l_arm_joint6" pos="0 0 0" axis="0 0 1" range="-1.0472 2.0944" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+                    <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link6_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                    <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="L_Link6" />
+                    <body name="l_link7" pos="0 0.0191 0">
+                      <inertial pos="-0.000118 0.02065 0.001074" quat="0.115533 0.704839 0.124712 0.688695" mass="0.121" diaginertia="4.31935e-05 4.18156e-05 3.25867e-05" />
+                      <joint name="l_arm_joint7" pos="0 0 0" axis="0 1 0" range="-2.96706 2.96706" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+                      <geom quat="0.707105 0.707108 0 0" type="mesh" rgba="0.898438 0 0.0703125 1" mesh="L_Link7_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                      <geom type="mesh" rgba="0.898438 0 0.0703125 1" mesh="L_Link7" quat="0.707105 0.707108 0 0" />
+                      <body name="l_handA_link" pos="0.012 0.024 0">
+                        <inertial pos="0.002649 0.026849 0.003757" quat="0.819175 0.572954 -0.000928508 0.0259809" mass="0.0158" diaginertia="1.0204e-05 6.51961e-06 4.81495e-06" />
+                        <joint name="l_hand_joint" pos="0 0 0" axis="0 0 1" range="-1.50098 0" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+                        <geom type="mesh" rgba="0.898438 0 0.0703125 1" mesh="L_HandA_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                        <geom type="mesh" rgba="0.898438 0 0.0703125 1" mesh="L_HandA" />
+                      </body>
+                      <body name="l_handB_link" pos="-0.012 0.024 0">
+                        <inertial pos="-0.003008 0.030851 0.002845" quat="0.850975 0.522315 -0.016039 -0.0526474" mass="0.0139" diaginertia="7.52416e-06 4.48287e-06 3.93832e-06" />
+                        <joint name="l_hand_mimic_joint" pos="0 0 0" axis="0 0 -1" range="-1.50098 0" actuatorfrcrange="-4 4" damping="0.1" frictionloss="0.8" />
+                        <geom type="mesh" rgba="0.898438 0 0.0703125 1" mesh="L_HandB_visual" contype="1" conaffinity="0" density="0" group="1" class="visualgeom" />
+                        <geom type="mesh" rgba="0.898438 0 0.0703125 1" mesh="L_HandB" />
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="waist_yaw_joint" joint="waist_yaw_joint" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="neck_yaw_joint" joint="neck_yaw_joint" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="neck_pitch_joint" joint="neck_pitch_joint" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="r_arm_joint1" joint="r_arm_joint1" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="r_arm_joint2" joint="r_arm_joint2" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="r_arm_joint3" joint="r_arm_joint3" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="r_arm_joint4" joint="r_arm_joint4" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="r_arm_joint5" joint="r_arm_joint5" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="r_arm_joint6" joint="r_arm_joint6" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="r_arm_joint7" joint="r_arm_joint7" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="r_hand_joint" joint="r_hand_joint" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="r_hand_mimic_joint" joint="r_hand_mimic_joint" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="l_arm_joint1" joint="l_arm_joint1" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="l_arm_joint2" joint="l_arm_joint2" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="l_arm_joint3" joint="l_arm_joint3" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="l_arm_joint4" joint="l_arm_joint4" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="l_arm_joint5" joint="l_arm_joint5" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="l_arm_joint6" joint="l_arm_joint6" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="l_arm_joint7" joint="l_arm_joint7" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="l_hand_joint" joint="l_hand_joint" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+    <motor name="l_hand_mimic_joint" joint="l_hand_mimic_joint" ctrllimited="true" ctrlrange="-4 4" gear="1" />
+  </actuator>
+
+  <sensor>
+    <actuatorpos name="waist_yaw_joint_p" actuator="waist_yaw_joint" />
+    <actuatorvel name="waist_yaw_joint_v" actuator="waist_yaw_joint" />
+    <actuatorfrc name="waist_yaw_joint_f" actuator="waist_yaw_joint" noise="0.001" />
+    <actuatorpos name="neck_yaw_joint_p" actuator="neck_yaw_joint" />
+    <actuatorvel name="neck_yaw_joint_v" actuator="neck_yaw_joint" />
+    <actuatorfrc name="neck_yaw_joint_f" actuator="neck_yaw_joint" noise="0.001" />
+    <actuatorpos name="neck_pitch_joint_p" actuator="neck_pitch_joint" />
+    <actuatorvel name="neck_pitch_joint_v" actuator="neck_pitch_joint" />
+    <actuatorfrc name="neck_pitch_joint_f" actuator="neck_pitch_joint" noise="0.001" />
+    <actuatorpos name="r_arm_joint1_p" actuator="r_arm_joint1" />
+    <actuatorvel name="r_arm_joint1_v" actuator="r_arm_joint1" />
+    <actuatorfrc name="r_arm_joint1_f" actuator="r_arm_joint1" noise="0.001" />
+    <actuatorpos name="r_arm_joint2_p" actuator="r_arm_joint2" />
+    <actuatorvel name="r_arm_joint2_v" actuator="r_arm_joint2" />
+    <actuatorfrc name="r_arm_joint2_f" actuator="r_arm_joint2" noise="0.001" />
+    <actuatorpos name="r_arm_joint3_p" actuator="r_arm_joint3" />
+    <actuatorvel name="r_arm_joint3_v" actuator="r_arm_joint3" />
+    <actuatorfrc name="r_arm_joint3_f" actuator="r_arm_joint3" noise="0.001" />
+    <actuatorpos name="r_arm_joint4_p" actuator="r_arm_joint4" />
+    <actuatorvel name="r_arm_joint4_v" actuator="r_arm_joint4" />
+    <actuatorfrc name="r_arm_joint4_f" actuator="r_arm_joint4" noise="0.001" />
+    <actuatorpos name="r_arm_joint5_p" actuator="r_arm_joint5" />
+    <actuatorvel name="r_arm_joint5_v" actuator="r_arm_joint5" />
+    <actuatorfrc name="r_arm_joint5_f" actuator="r_arm_joint5" noise="0.001" />
+    <actuatorpos name="r_arm_joint6_p" actuator="r_arm_joint6" />
+    <actuatorvel name="r_arm_joint6_v" actuator="r_arm_joint6" />
+    <actuatorfrc name="r_arm_joint6_f" actuator="r_arm_joint6" noise="0.001" />
+    <actuatorpos name="r_arm_joint7_p" actuator="r_arm_joint7" />
+    <actuatorvel name="r_arm_joint7_v" actuator="r_arm_joint7" />
+    <actuatorfrc name="r_arm_joint7_f" actuator="r_arm_joint7" noise="0.001" />
+    <actuatorpos name="r_hand_joint_p" actuator="r_hand_joint" />
+    <actuatorvel name="r_hand_joint_v" actuator="r_hand_joint" />
+    <actuatorfrc name="r_hand_joint_f" actuator="r_hand_joint" noise="0.001" />
+    <actuatorpos name="r_hand_mimic_joint_p" actuator="r_hand_mimic_joint" />
+    <actuatorvel name="r_hand_mimic_joint_v" actuator="r_hand_mimic_joint" />
+    <actuatorfrc name="r_hand_mimic_joint_f" actuator="r_hand_mimic_joint" noise="0.001" />
+    <actuatorpos name="l_arm_joint1_p" actuator="l_arm_joint1" />
+    <actuatorvel name="l_arm_joint1_v" actuator="l_arm_joint1" />
+    <actuatorfrc name="l_arm_joint1_f" actuator="l_arm_joint1" noise="0.001" />
+    <actuatorpos name="l_arm_joint2_p" actuator="l_arm_joint2" />
+    <actuatorvel name="l_arm_joint2_v" actuator="l_arm_joint2" />
+    <actuatorfrc name="l_arm_joint2_f" actuator="l_arm_joint2" noise="0.001" />
+    <actuatorpos name="l_arm_joint3_p" actuator="l_arm_joint3" />
+    <actuatorvel name="l_arm_joint3_v" actuator="l_arm_joint3" />
+    <actuatorfrc name="l_arm_joint3_f" actuator="l_arm_joint3" noise="0.001" />
+    <actuatorpos name="l_arm_joint4_p" actuator="l_arm_joint4" />
+    <actuatorvel name="l_arm_joint4_v" actuator="l_arm_joint4" />
+    <actuatorfrc name="l_arm_joint4_f" actuator="l_arm_joint4" noise="0.001" />
+    <actuatorpos name="l_arm_joint5_p" actuator="l_arm_joint5" />
+    <actuatorvel name="l_arm_joint5_v" actuator="l_arm_joint5" />
+    <actuatorfrc name="l_arm_joint5_f" actuator="l_arm_joint5" noise="0.001" />
+    <actuatorpos name="l_arm_joint6_p" actuator="l_arm_joint6" />
+    <actuatorvel name="l_arm_joint6_v" actuator="l_arm_joint6" />
+    <actuatorfrc name="l_arm_joint6_f" actuator="l_arm_joint6" noise="0.001" />
+    <actuatorpos name="l_arm_joint7_p" actuator="l_arm_joint7" />
+    <actuatorvel name="l_arm_joint7_v" actuator="l_arm_joint7" />
+    <actuatorfrc name="l_arm_joint7_f" actuator="l_arm_joint7" noise="0.001" />
+    <actuatorpos name="l_hand_joint_p" actuator="l_hand_joint" />
+    <actuatorvel name="l_hand_joint_v" actuator="l_hand_joint" />
+    <actuatorfrc name="l_hand_joint_f" actuator="l_hand_joint" noise="0.001" />
+    <actuatorpos name="l_hand_mimic_joint_p" actuator="l_hand_mimic_joint" />
+    <actuatorvel name="l_hand_mimic_joint_v" actuator="l_hand_mimic_joint" />
+    <actuatorfrc name="l_hand_mimic_joint_f" actuator="l_hand_mimic_joint" noise="0.001" />
+    <framequat name="orientation" objtype="site" noise="0.001" objname="imu" />
+    <gyro name="angular-velocity" site="imu" noise="0.005" cutoff="34.9" />
+  </sensor>
+</mujoco>

@@ -1,0 +1,85 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco>
+  <default>
+    <geom friction="1.0 0.05 0.01" />
+    <joint damping="2" />
+  </default>
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" rgb1=".1 .2 .3" rgb2=".2 .3 .4" width="300" height="300" mark="none" />
+    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2" />
+  </asset>
+  <worldbody>
+    <light pos="0 0 3" />
+    <geom name="floor" type="plane" pos="0 0 -.3" size="2 2 .1" material="grid" friction="0 0 0" />
+    <body name="crane_base" pos="0 0 0.8">
+      <joint name="crane_base__up_down" type="slide" axis="0 0 1" range="-0.5 1" damping="3" />
+      <geom name="crane_base__crane" type="capsule" fromto="-0.5 0 0 0.5 0 0" size=".05" rgba="1 1 0 1" />
+      <site name="crane_base__crane_site" pos="0 0 -0.05" size=".02" />
+    </body>
+    <body name="red_box" pos="-0.5 0 0.3">
+      <freejoint />
+      <geom name="red_box__box" type="box" size=".2 .2 .2" rgba="1 0 0 0.7" friction="0.9 0.05 0.01" />
+      
+      <site name="red_box__top" pos="0.2 0 0.2" size=".02" />
+      
+    </body>
+    <body name="blue_box" pos="0.05 0 0.3">
+      <freejoint name="blue_box__blue_joint" />
+      <geom name="blue_box__blue_box" type="sphere" size=".2" rgba="0 0 1 0.7" friction="0.9 0.05 0.01" />
+    </body>
+    <body name="dummy" pos="0 0 0">
+      <joint name="dummy__tx" type="slide" axis="1 0 0" />
+      <joint name="dummy__ty" type="slide" axis="0 1 0" />
+      <joint name="dummy__tz" type="slide" axis="0 0 1" />
+      <!-- <freejoint name="dummy_joint" /> -->
+      <geom name="dummy__dummy" type="sphere" size=".2" rgba="1 0 1 0.3" contype="0" conaffinity="0"  />
+      
+    </body>
+    <body name="green_box" pos="0.4 0.15 0.3">
+      <freejoint />
+      <geom name="green_box__box" type="box" size=".2 .2 .2" rgba="0 1 0 0.7" friction="0.9 0.05 0.01" />
+      
+      <site name="green_box__top" pos="-0.2 0 0.2" size=".02" />
+    
+    </body>
+  </worldbody>
+  <tendon>
+    <!-- <spatial name="spring1" rgba="0 0 1 1" stiffness="100" damping="100" springlength="0.75">
+      <site site="red_box__bottom_middle" />
+      <site site="green_box__bottom_middle" />
+    </spatial>
+    <spatial name="spring2" rgba="0 0 1 1" stiffness="100" damping="100" springlength="0.75">
+      <site site="red_box__far" />
+      <site site="green_box__far" />
+    </spatial>
+    <spatial name="spring3" rgba="0 0 1 1" stiffness="100" damping="100" springlength="0.75">
+      <site site="red_box__near" />
+      <site site="green_box__near" />
+    </spatial>
+    <spatial name="spring6" rgba="0 0 1 1" stiffness="100" damping="100" springlength="0.75">
+      <site site="red_box__top_middle" />
+      <site site="green_box__top_middle" />
+    </spatial>
+    <spatial name="spring4" rgba="0 0 1 1" stiffness="0" damping="0" springlength="0.00">
+      <site site="red_box__mid" />
+      <geom geom="dummy__dummy" />
+      <site site="dummy__red" />
+    </spatial>
+    <spatial name="spring5" rgba="0 0 1 1" stiffness="0" damping="0" springlength="0.00">
+      <site site="green_box__mid" />
+      <geom geom="dummy__dummy" />
+      <site site="dummy__green" />
+    </spatial> -->
+    <spatial name="chain_red" limited="true" range="0 1" rgba="0 0 0 1">
+      <site site="red_box__top" />
+      <site site="crane_base__crane_site" />
+    </spatial>
+    <spatial name="chain_green" limited="true" range="0 1" rgba="0 0 0 1">
+      <site site="green_box__top" />
+      <site site="crane_base__crane_site" />
+    </spatial>
+  </tendon>
+  <actuator>
+    <position name="lift" joint="crane_base__up_down" kp="7000" kv="2000" ctrlrange="-0.5 2.0" />
+  </actuator>
+</mujoco>

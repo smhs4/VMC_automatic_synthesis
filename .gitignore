@@ -1,0 +1,45 @@
+# Ignore Python virtual environment directories
+.venv/
+venv/
+env/
+ENV/
+.env/
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Training results and outputs
+training_results/
+ga_checkpoints/
+ga_checkpoints7/
+ga_checkpoint8/
+ga_stats/
+videos/
+*.mp4
+*.avi
+
+# MuJoCo logs
+MUJOCO_LOG.TXT
+
+# Debug files
+debug_individual.txt
+
+# Example/reference directories (not part of core project)
+Sciurus17_mujoco_sim_example/
+
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

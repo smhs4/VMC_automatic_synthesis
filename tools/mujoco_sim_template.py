@@ -545,7 +545,7 @@ class ModelBuilder:
         importlib.reload(mujoco)
         self.spec: Optional[mujoco.MjSpec] = None
         self.graph = G
-        print(self.spec)
+        # print(self.spec)
     
     def from_xml_path(self, xml_path: str):
         """Load base model from XML file."""
@@ -555,6 +555,96 @@ class ModelBuilder:
     def from_xml_string(self, xml_string: str):
         """Load base model from XML string."""
         self.spec = mujoco.MjSpec.from_string(xml_string)
+        return self
+    
+    def add_mesh(self, name: str,
+                 file: Optional[str] = None,
+                 vertex: Optional[List[List[float]]] = None,
+                 face: Optional[List[List[int]]] = None,
+                 scale: List[float] = [1, 1, 1],
+                 smoothnormal: bool = True) -> 'ModelBuilder':
+        """
+        Add a mesh asset to the model.
+        
+        Meshes can be loaded from file (STL, OBJ) or defined with vertices/faces.
+        
+        Args:
+            name: Name for the mesh asset (used in geom mesh="name")
+            file: Path to mesh file (STL, OBJ, MSH, etc.)
+            vertex: List of vertex positions [[x,y,z], ...] for inline mesh
+            face: List of triangle face indices [[v0,v1,v2], ...] for inline mesh
+            scale: Scale factors [x, y, z] applied to mesh
+            smoothnormal: If True, smooth vertex normals for better visual
+        
+        Returns:
+            self for method chaining
+            
+        Example:
+            # From file
+            builder.add_mesh("robot_gripper", file="meshes/gripper.stl", scale=[0.001, 0.001, 0.001])
+            
+            # Inline definition (simple tetrahedron)
+            builder.add_mesh("tetra", 
+                           vertex=[[0,0,0], [1,0,0], [0.5,1,0], [0.5,0.5,1]],
+                           face=[[0,1,2], [0,1,3], [1,2,3], [0,2,3]])
+        """
+        if not self.spec:
+            raise RuntimeError("Must load a base model first")
+        
+        # Add mesh to spec's meshes list
+        mesh = self.spec.add_mesh()
+        mesh.name = name
+        mesh.scale = scale
+        mesh.smoothnormal = smoothnormal
+        
+        if file is not None:
+            mesh.file = file
+        elif vertex is not None and face is not None:
+            # Inline mesh definition
+            import numpy as np
+            mesh.uservert = np.array(vertex, dtype=np.float32).flatten()
+            mesh.userface = np.array(face, dtype=np.int32).flatten()
+        else:
+            raise ValueError("Must provide either 'file' or both 'vertex' and 'face'")
+        
+        return self
+    
+    def add_material(self, name: str,
+                     texture: Optional[str] = None,
+                     rgba: List[float] = [1, 1, 1, 1],
+                     specular: float = 0.5,
+                     shininess: float = 0.5,
+                     reflectance: float = 0.0,
+                     emission: float = 0.0) -> 'ModelBuilder':
+        """
+        Add a material asset for use with meshes and geoms.
+        
+        Args:
+            name: Name for the material
+            texture: Name of texture to use (optional)
+            rgba: Base color [r, g, b, a]
+            specular: Specular reflection coefficient [0-1]
+            shininess: Shininess coefficient [0-1]
+            reflectance: Reflectance coefficient [0-1]
+            emission: Emission coefficient [0-1]
+            
+        Returns:
+            self for method chaining
+        """
+        if not self.spec:
+            raise RuntimeError("Must load a base model first")
+        
+        material = self.spec.add_material()
+        material.name = name
+        material.rgba = rgba
+        material.specular = specular
+        material.shininess = shininess
+        material.reflectance = reflectance
+        material.emission = emission
+        
+        if texture:
+            material.texture = texture
+        
         return self
     
     def _find_body(self, name: str, body=None):
@@ -699,10 +789,13 @@ class ModelBuilder:
                  geom_type: str = "box",
                  geom_size: List[float] = [0.05, 0.05, 0.05],
                  geom_rgba: List[float] = [0.5, 0.5, 0.8, 1],
+                 geom_mesh: Optional[str] = None,
+                 geom_material: Optional[str] = None,
                  free_joint: bool = True,
                  parent: Optional[str] = None,
                  intersection: bool = True,
-                 joints: Optional[List[float]] = None) -> 'ModelBuilder':
+                 joints: Optional[List[float]] = None,
+                 friction: Optional[List[float]] = None) -> 'ModelBuilder':
         """
         Add a new body with a geom.
         
@@ -711,11 +804,19 @@ class ModelBuilder:
             pos: Initial position [x, y, z]
             quat: Initial orientation [w, x, y, z]
             mass: Body mass
-            geom_type: "box", "sphere", "cylinder", "capsule"
-            geom_size: Geom dimensions (interpretation depends on type)
+            geom_type: "box", "sphere", "cylinder", "capsule", "mesh"
+            geom_size: Geom dimensions (interpretation depends on type, ignored for mesh)
             geom_rgba: Color [r, g, b, a]
+            geom_mesh: Mesh name (required when geom_type="mesh", must call add_mesh first)
+            geom_material: Material name (optional, must call add_material first)
             free_joint: Add a free joint (6 DOF)
             parent: Parent body name (None = world)
+            intersection: Whether geom has collision detection enabled
+            joints: List of joint axes for sliding joints (e.g., [[1,0,0], [0,1,0]])
+            friction: Friction coefficients [sliding, torsional, rolling] (None = MuJoCo default [1, 0.005, 0.0001])
+                     - sliding: friction for sliding motion (most important)
+                     - torsional: friction for spinning in place
+                     - rolling: friction for rolling motion
         """
         if not self.spec:
             raise RuntimeError("Must load a base model first")
@@ -735,9 +836,7 @@ class ModelBuilder:
         if quat is not None:
             body.quat = quat  # Default orientation
 
-
-        # Set inertial properties directly
-        body.mass = mass
+        # Note: mass is set on the geom (below) so MuJoCo can compute inertia from geometry
         
         # Add free joint if requested
         if free_joint:
@@ -754,20 +853,198 @@ class ModelBuilder:
         # Add geom
         geom = body.add_geom()
         geom.name = f"{name}_geom"
-        geom.type = getattr(mujoco.mjtGeom, f"mjGEOM_{geom_type.upper()}")
-        # Ensure geom_size has 3 elements (pad with zeros if needed)
-        if len(geom_size) == 1:
-            geom.size = [geom_size[0], geom_size[0], geom_size[0]]
-        elif len(geom_size) == 2:
-            geom.size = [geom_size[0], geom_size[1], 0]
+        
+        # Handle mesh geom type separately
+        if geom_type.lower() == "mesh":
+            if geom_mesh is None:
+                raise ValueError("geom_mesh must be specified when geom_type='mesh'")
+            geom.type = mujoco.mjtGeom.mjGEOM_MESH
+            geom.meshname = geom_mesh
         else:
-            geom.size = geom_size
+            geom.type = getattr(mujoco.mjtGeom, f"mjGEOM_{geom_type.upper()}")
+            # Ensure geom_size has 3 elements (pad with zeros if needed)
+            if len(geom_size) == 1:
+                geom.size = [geom_size[0], geom_size[0], geom_size[0]]
+            elif len(geom_size) == 2:
+                geom.size = [geom_size[0], geom_size[1], 0]
+            else:
+                geom.size = geom_size
+        
+        # Set material if specified
+        if geom_material is not None:
+            geom.material = geom_material
+        
         geom.rgba = geom_rgba
+        
+        # Set mass on geom so MuJoCo computes inertia from geometry
+        # This is especially important for mesh bodies
+        geom.mass = mass
+
+        # Set friction if provided
+        if friction is not None:
+            if len(friction) == 1:
+                # If only one value, use it for sliding friction
+                geom.friction = [friction[0], 0.005, 0.0001]
+            elif len(friction) == 2:
+                # If two values, use for sliding and torsional
+                geom.friction = [friction[0], friction[1], 0.0001]
+            else:
+                # Use all three values
+                geom.friction = friction
 
         if not intersection:
             geom.contype = 0
             geom.conaffinity = 0
 
+        return self
+    
+    def add_deformable_object(self, name: str,
+                             pos: List[float] = [0, 0, 0],
+                             shape: str = "box",
+                             size: List[float] = [0.1, 0.1, 0.1],
+                             spacing: float = 0.02,
+                             stiffness: float = 1000.0,
+                             damping: float = 10.0,
+                             mass: float = 1.0,
+                             rgba: List[float] = [0.8, 0.3, 0.3, 0.8],
+                             particle_size: float = 0.01,
+                             solref: List[float] = None,
+                             solimp: List[float] = None) -> 'ModelBuilder':
+        """
+        Add a deformable object using MuJoCo's composite/flexcomp feature.
+        
+        Creates a soft body made of particles connected by springs/tendons that can
+        deform when grasped or manipulated.
+        
+        Args:
+            name: Name prefix for the composite object
+            pos: Initial position [x, y, z]
+            shape: Shape type - "box", "sphere", "ellipsoid", "cylinder"
+            size: Dimensions [x, y, z] - interpretation depends on shape:
+                  - box: [half_width, half_depth, half_height]
+                  - sphere: [radius, 0, 0]
+                  - ellipsoid: [radius_x, radius_y, radius_z]
+                  - cylinder: [radius, half_height, 0]
+            spacing: Distance between particles (smaller = more particles, more deformable)
+            stiffness: Spring stiffness connecting particles (higher = stiffer)
+            damping: Spring damping (higher = more energy dissipation)
+            mass: Total mass distributed across all particles
+            rgba: Color [r, g, b, alpha]
+            particle_size: Visual size of each particle sphere
+            solref: Contact solver reference [timeconst, dampratio] for soft contacts
+            solimp: Contact solver impedance [dmin, dmax, width, mid, power]
+        
+        Returns:
+            self for method chaining
+            
+        Example:
+            # Soft sponge-like object
+            builder.add_deformable_object("sponge", 
+                                         pos=[0.5, 0, 0.2],
+                                         shape="box",
+                                         size=[0.05, 0.05, 0.05],
+                                         spacing=0.015,
+                                         stiffness=500.0,
+                                         damping=5.0,
+                                         rgba=[1, 1, 0, 0.6])
+            
+            # Deformable ball
+            builder.add_deformable_object("ball",
+                                         pos=[0.5, 0, 0.2],
+                                         shape="sphere",
+                                         size=[0.04, 0, 0],
+                                         spacing=0.01,
+                                         stiffness=2000.0)
+        """
+        if not self.spec:
+            raise RuntimeError("Must load a base model first")
+        
+        # Set default contact parameters for soft objects if not provided
+        if solref is None:
+            solref = [0.01, 1.0]  # Soft, compliant contacts
+        if solimp is None:
+            solimp = [0.9, 0.95, 0.001, 0.5, 2]  # Penetration tolerance for soft body
+        
+        # Create composite/flexcomp object - add_composite is a method of MjSpec, not MjsBody
+        composite = self.spec.add_composite()
+        composite.prefix = name
+        composite.type = mujoco.mjtComposite.mjCOMPOS_PARTICLE  # Particle-based soft body
+        
+        # Set geometry type
+        if shape == "box":
+            composite.add_box(
+                pos=pos,
+                size=size,
+                count=[
+                    max(2, int(2 * size[0] / spacing)),
+                    max(2, int(2 * size[1] / spacing)),
+                    max(2, int(2 * size[2] / spacing))
+                ]
+            )
+        elif shape == "sphere":
+            composite.add_ellipsoid(
+                pos=pos,
+                size=[size[0], size[0], size[0]],  # Uniform radius
+                count=[
+                    max(3, int(2 * size[0] / spacing)),
+                    max(3, int(2 * size[0] / spacing)),
+                    max(2, int(2 * size[0] / spacing))
+                ]
+            )
+        elif shape == "ellipsoid":
+            composite.add_ellipsoid(
+                pos=pos,
+                size=size,
+                count=[
+                    max(3, int(2 * size[0] / spacing)),
+                    max(3, int(2 * size[1] / spacing)),
+                    max(2, int(2 * size[2] / spacing))
+                ]
+            )
+        elif shape == "cylinder":
+            composite.add_cylinder(
+                pos=pos,
+                size=[size[0], size[1]],  # [radius, half_height]
+                count=[
+                    max(4, int(2 * np.pi * size[0] / spacing)),
+                    max(2, int(2 * size[1] / spacing))
+                ]
+            )
+        else:
+            raise ValueError(f"Unsupported shape: {shape}. Use 'box', 'sphere', 'ellipsoid', or 'cylinder'")
+        
+        # Configure particle properties
+        composite.spacing = spacing
+        composite.solrefsmooth = solref
+        composite.solimpsmooth = solimp
+        
+        # Add pin to fix the composite (can be removed if free-floating desired)
+        # composite.add_pin(0, 0, 0)  # Uncomment to pin first particle
+        
+        # Set material properties for particles
+        # Note: Individual particle mass will be total_mass / num_particles
+        geom = composite.geom
+        geom.size = [particle_size]
+        geom.rgba = rgba
+        geom.mass = mass / (composite.count[0] * composite.count[1] * composite.count[2] if hasattr(composite, 'count') else 100)
+        geom.solref = solref
+        geom.solimp = solimp
+        
+        # Add internal springs/tendons connecting particles
+        if stiffness > 0 or damping > 0:
+            # Skin creates visual mesh and internal constraints
+            composite.add_skin()
+            skin = composite.skin
+            skin.rgba = rgba
+            skin.inflate = particle_size * 0.5
+            
+            # Internal tendons for structural integrity
+            # Note: Tendons are automatically created between nearby particles
+            tendon = composite.tendon
+            tendon.kind = mujoco.mjtTendon.mjTENDON_FIXED
+            tendon.stiffness = stiffness
+            tendon.damping = damping
+        
         return self
     
     def remove_body(self, name: str) -> 'ModelBuilder':
@@ -950,7 +1227,7 @@ class ModelBuilder:
         """
         if not self.spec:
             raise RuntimeError("Must load a base model first")
-        print(self.spec)
+        # print(self.spec)
         model = self.spec.compile()
         
         # Clear the spec after compilation to prevent reuse
@@ -1149,8 +1426,8 @@ class MuJoCoSimulation:
         self._control_callback = callback
         self._gravity_comp = gravity_comp
 
-        if gravity_comp:
-            print("Gravity compensation enabled in control callback.")
+        # if gravity_comp:
+        #     print("Gravity compensation enabled in control callback.")
         
         def mujoco_control(model, data):
 

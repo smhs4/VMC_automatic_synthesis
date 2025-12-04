@@ -16,6 +16,7 @@ Dependencies:
 
 import sys
 import os
+from tabnanny import verbose
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Set matplotlib to non-interactive backend BEFORE importing pyplot
@@ -53,12 +54,12 @@ class GAConfig:
     """Configuration for Genetic Algorithm using DEAP"""
     
     # GA Parameters
-    POPULATION_SIZE = 50
-    NUM_GENERATIONS = 30
-    TOURNAMENT_SIZE = 3
+    POPULATION_SIZE = 20
+    NUM_GENERATIONS = 10
+    TOURNAMENT_SIZE = 2
     CROSSOVER_PROB = 0.7
     MUTATION_PROB = 0.4
-    ELITE_SIZE = 5
+    ELITE_SIZE = 2
     
     # Parallelization
     NUM_PROCESSES = None  # None = use all CPU cores, or set to specific number
@@ -68,25 +69,26 @@ class GAConfig:
     HALF_LENGTH = 0.15  # half length of chopstick
 
     # Site parameters
-    N_SITES_ARM_X = 5  # Number of connection sites per chopstick 
-    N_SITES_ARM_Y = 5  # Number of connection sites per chopstick 
-    N_SITES_ARM_Z = 5  # Number of connection sites per chopstick
+    N_SITES_ARM_X = 3  # Number of connection sites per chopstick 
+    N_SITES_ARM_Y = 3  # Number of connection sites per chopstick 
+    N_SITES_ARM_Z = 3  # Number of connection sites per chopstick
     N_SITES_ARM = N_SITES_ARM_X * N_SITES_ARM_Y * N_SITES_ARM_Z  # Total sites per chopstick
     N_SITES_OBJECT_X = 3  # Number of connection sites on object 
     N_SITES_OBJECT_Y = 3  # Number of connection sites on object 
     N_SITES_OBJECT_Z = 3  # Number of connection sites on object 
     N_SITES_OBJECT = N_SITES_OBJECT_X * N_SITES_OBJECT_Y * N_SITES_OBJECT_Z  # Total sites on object
-    MARGIN_R_ARM = 0
-    MARGIN_Z_ARM = 0
-    MARGIN_R_OBJECT = -0.05
-    MARGIN_Z_OBJECT = -0.05
+    MARGIN_R_ARM = 0.5
+    MARGIN_Z_ARM = 0.5
+    MARGIN_R_OBJECT = 0
+    MARGIN_Z_OBJECT = 0
 
     # Tendon parameters
-    MIN_STIFFNESS = 10.0   # N/m
-    MAX_STIFFNESS = 100.0  # N/m
+    E_NUM_TENDON = 10
+    MIN_STIFFNESS = 1.0   # N/m
+    MAX_STIFFNESS = 10.0  # N/m
     MIN_DAMPING = 1.0      # N*s/m
     MAX_DAMPING = 10.0     # N*s/m
-    BASE_CONNECTION_PROB = 0.001  # Initial connection density
+    BASE_CONNECTION_PROB = E_NUM_TENDON / (N_SITES_ARM * N_SITES_OBJECT) * 2 + N_SITES_ARM ** 2  # Initial connection density
     
     # Mutation parameters
     FLIP_PROB = 0.1        # Probability to flip each connection
@@ -98,7 +100,7 @@ class GAConfig:
     SIM_DT = 0.01          # seconds
     
     # Fitness weights
-    CONTACT_WEIGHT = 2
+    CONTACT_WEIGHT = 0.001
     HEIGHT_WEIGHT = 5
     CENTRE_WEIGHT = 5
     STABILITY_WEIGHT = 2
@@ -145,7 +147,7 @@ def create_individual():
     
     """
     
-    n_cross_connections = (GAConfig.N_SITES_ARM * GAConfig.N_SITES_OBJECT) * 2  # from object to both chopsticks
+    n_cross_connections = (GAConfig.N_SITES_ARM * GAConfig.N_SITES_OBJECT) * 2 + GAConfig.N_SITES_ARM ** 2  # from object to both chopsticks
 
     genome = []
     
@@ -168,6 +170,9 @@ def decode_genome(individual: creator.Individual) -> Tuple[np.ndarray, np.ndarra
     """
     Decode flat genome into matrices.
     
+    Normalizes stiffness by the number of tendons to prevent overly stiff systems
+    when many tendons are present.
+    
     Returns:
         (adjacency_matrix, stiffness_matrix, damping_matrix)
         Each is an 8x8 symmetric matrix
@@ -177,37 +182,79 @@ def decode_genome(individual: creator.Individual) -> Tuple[np.ndarray, np.ndarra
     with open("debug_individual.txt", "a") as f:
         f.write(str(individual) + "\n")
 
-    n_cross_connections = (GAConfig.N_SITES_ARM * GAConfig.N_SITES_OBJECT) * 2  # from object to both chopsticks
+    n_cross_connections_arm_to_body = (GAConfig.N_SITES_ARM * GAConfig.N_SITES_OBJECT)  # from object to both chopsticks
+    n_cross_connections_body_to_body = GAConfig.N_SITES_ARM ** 2  # between chopsticks
+    
+    # First pass: count number of active tendons
+    num_tendons = sum(individual[:n_cross_connections_arm_to_body + n_cross_connections_body_to_body + n_cross_connections_arm_to_body])
+    
+    # Calculate normalization factor (use sqrt to reduce the effect)
+    # This prevents excessive stiffness when many tendons are present
+    normalization_factor = np.sqrt(max(1, num_tendons))
+    
     G = nx.Graph()
 
-    for index in range(n_cross_connections):
+    # left arm
+    for index in range(len(individual)):
         if individual[ index ] == 1:
-            index_n = index % (n_cross_connections // 2)
+            # Get raw stiffness and damping from genome
+            raw_stiffness = individual[n_cross_connections_arm_to_body + n_cross_connections_body_to_body + index]
+            raw_damping = individual[(n_cross_connections_arm_to_body + n_cross_connections_body_to_body) * 2 + index ]  
+            
+            # Normalize stiffness by number of tendons
+            stiffness = raw_stiffness / normalization_factor
+            damping = raw_damping  # Keep damping unchanged
+            
+            side = 'none'
+            if index <= 2*n_cross_connections_arm_to_body:
+                if index <= n_cross_connections_arm_to_body:
+                    side = 'left'
+                else:
+                    side = 'right'
+                index_n = index % (n_cross_connections_arm_to_body)
+                obj_i = index_n % GAConfig.N_SITES_OBJECT
+                arm_i = index_n // GAConfig.N_SITES_OBJECT
 
-            obj_i = index_n % GAConfig.N_SITES_OBJECT
-            arm_i = index_n // GAConfig.N_SITES_OBJECT
+                obj_x = ( obj_i % (GAConfig.N_SITES_OBJECT_X * GAConfig.N_SITES_OBJECT_Y) ) % GAConfig.N_SITES_OBJECT_X
+                obj_y = ( obj_i % (GAConfig.N_SITES_OBJECT_X * GAConfig.N_SITES_OBJECT_Y) ) // GAConfig.N_SITES_OBJECT_X
+                obj_z = ( obj_i // (GAConfig.N_SITES_OBJECT_X * GAConfig.N_SITES_OBJECT_Y) )
 
-            obj_x = ( obj_i % (GAConfig.N_SITES_OBJECT_X * GAConfig.N_SITES_OBJECT_Y) ) % GAConfig.N_SITES_OBJECT_X
-            obj_y = ( obj_i % (GAConfig.N_SITES_OBJECT_X * GAConfig.N_SITES_OBJECT_Y) ) // GAConfig.N_SITES_OBJECT_X
-            obj_z = ( obj_i // (GAConfig.N_SITES_OBJECT_X * GAConfig.N_SITES_OBJECT_Y) )
+                arm_x = ( arm_i % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) % GAConfig.N_SITES_ARM_X
+                arm_y = ( arm_i % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) // GAConfig.N_SITES_ARM_X
+                arm_z = ( arm_i // (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) )
 
-            arm_x = ( arm_i % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) % GAConfig.N_SITES_ARM_X
-            arm_y = ( arm_i % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) // GAConfig.N_SITES_ARM_X
-            arm_z = ( arm_i // (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) )
-
-            if index < n_cross_connections // 2:
-                # Left chopstick
-                G.add_edge(f"left_chopstick_site_{arm_x}_{arm_y}_{arm_z}", f"ghost_target_site_{obj_x}_{obj_y}_{obj_z}", 
-                           type='spatial',
-                           stiffness=individual[index + n_cross_connections],
-                           damping=individual[index + 2 * n_cross_connections],
-                           springlength=[0, 0.01])
+                if side == 'left':
+                    # Left chopstick
+                    G.add_edge(f"left_chopstick_site_{arm_x}_{arm_y}_{arm_z}", f"ghost_target_site_{obj_x}_{obj_y}_{obj_z}", 
+                            type='spatial',
+                            stiffness=stiffness,
+                            damping=damping,
+                            springlength=[0, 0.01])
+                elif side == 'right':
+                    # Right chopstick
+                    G.add_edge(f"right_chopstick_site_{arm_x}_{arm_y}_{arm_z}", f"ghost_target_site_{obj_x}_{obj_y}_{obj_z}", 
+                            type='spatial',
+                            stiffness=stiffness,
+                            damping=damping,
+                            springlength=[0, 0.01])
             else:
-                # Right chopstick
-                G.add_edge(f"right_chopstick_site_{arm_x}_{arm_y}_{arm_z}", f"ghost_target_site_{obj_x}_{obj_y}_{obj_z}", 
+                index_n = (index - 2*n_cross_connections_arm_to_body) % n_cross_connections_body_to_body
+
+                left_i = index_n % GAConfig.N_SITES_ARM
+                right_i = index_n // GAConfig.N_SITES_ARM
+
+                left_x = ( left_i % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) % GAConfig.N_SITES_ARM_X
+                left_y = ( left_i % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) // GAConfig.N_SITES_ARM_X
+                left_z = ( left_i // (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) )
+
+                right_x = ( right_i % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) % GAConfig.N_SITES_ARM_X
+                right_y = ( right_i % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) // GAConfig.N_SITES_ARM_X
+                right_z = ( right_i // (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) )
+
+                G.add_edge(f"left_chopstick_site_{left_x}_{left_y}_{left_z}", f"right_chopstick_site_{right_x}_{right_y}_{right_z}", 
                            type='spatial',
-                           stiffness=individual[index + n_cross_connections],
-                           damping=individual[index + 2 * n_cross_connections],
+                           stiffness=stiffness,
+                           damping=damping,
                            springlength=[0, 0.01])
 
     return G
@@ -306,6 +353,7 @@ def build_model_from_genome(G) -> MuJoCoSimulation:
     builder.from_xml_path(xml_path)  # This creates a fresh MjSpec from XML
     times["builder_init_and_xml"] = time.perf_counter() - t0
 
+    random_orientation = quat_from_euler(0, 0, random.uniform(-math.pi, math.pi))
     # Add a platform, target and object to place objects on
     t0 = time.perf_counter()
     builder.add_body("platform", pos=[0.5, 0, 0.1],
@@ -313,10 +361,12 @@ def build_model_from_genome(G) -> MuJoCoSimulation:
                         free_joint=False, geom_rgba=[0.7,0.5,0.5,1], mass=10)
 
     builder.add_body("target", pos=[0.5, 0, 0.3],
+                     quat=random_orientation,
                         geom_type="box", geom_size=[0.05, 0.05, 0.05],
                         free_joint=True, geom_rgba=[0,1,0,1], mass=1)
     
     builder.add_body("ghost_target", pos=[0.5, 0, 0.3],
+                        quat=random_orientation,
                      geom_type="box", geom_size=[0.05, 0.05, 0.05],
                      free_joint=True, geom_rgba=[1,1,1,0.1], mass=1, intersection=False)
     times["add_static_bodies"] = time.perf_counter() - t0
@@ -338,14 +388,16 @@ def build_model_from_genome(G) -> MuJoCoSimulation:
     t0 = time.perf_counter()
     builder.add_body("left_chopstick", pos=[0, 0.1, 0],
                     quat=quat_from_euler(math.pi/2, 0, 0),
-                    geom_type="capsule", geom_size=[GAConfig.RADIUS, GAConfig.HALF_LENGTH],
-                    parent="l_link6",
-                    free_joint=False, geom_rgba=left_chopstick_color, mass=0.1)
+                            geom_type="box", geom_size=[GAConfig.RADIUS, GAConfig.RADIUS, GAConfig.HALF_LENGTH],
+                            parent="l_link6",
+                    free_joint=False, geom_rgba=left_chopstick_color, mass=0.1,
+                    friction=[2.0, 0.01, 0.001])  # High friction for good grip
     builder.add_body("right_chopstick", pos=[0, -0.1, 0],
                     quat=quat_from_euler(math.pi/2, 0, 0),
-                    geom_type="capsule", geom_size=[GAConfig.RADIUS, GAConfig.HALF_LENGTH],
+                    geom_type="box", geom_size=[GAConfig.RADIUS, GAConfig.RADIUS, GAConfig.HALF_LENGTH],
                     parent="r_link6",
-                    free_joint=False, geom_rgba=right_chopstick_color, mass=0.1)
+                    free_joint=False, geom_rgba=right_chopstick_color, mass=0.1,
+                    friction=[2.0, 0.01, 0.001])  # High friction for good grip
     times["add_chopstick_bodies"] = time.perf_counter() - t0
 
     # Adding mechanism to lift chopsticks
@@ -465,9 +517,8 @@ def build_model_from_genome(G) -> MuJoCoSimulation:
             joint = sim.reg_joint(name, name)
             joint.qpos = pos
         except Exception as e:
-
-            
-            print(f"Error setting joint '{name}': {e}")
+            if verbose := False:
+                print(f"Error setting joint '{name}': {e}")
 
     sim.forward()
 
@@ -507,11 +558,11 @@ def evaluate_fitness(individual: creator.Individual) -> Tuple[float,]:
     # try:
     # Decode genome
     G = decode_genome(individual)
-    print("Genome decoded")
+    # print("Genome decoded")
     
     # Build simulation
     sim = build_model_from_genome(G)
-    print("Model built from genome")
+    # print("Model built from genome")
     
     # Register bodies
     target = sim.reg_body('target_block', 'target')
@@ -553,8 +604,10 @@ def evaluate_fitness(individual: creator.Individual) -> Tuple[float,]:
     # Final height
     final_height = target.pos[2]
     height_gain = final_height - initial_height
+    height_gain = height_gain if height_gain < 0.7 else 0
 
     final_centre_dist = np.linalg.norm(target.pos[:2] - np.array([0.5, 0.0]))
+    dist = final_centre_dist if final_centre_dist > 0.05 else 0
     
     # Average velocity (lower is more stable)
     avg_velocity = total_velocity / n_steps if n_steps > 0 else 0
@@ -582,7 +635,7 @@ def evaluate_fitness(individual: creator.Individual) -> Tuple[float,]:
     # Force garbage collection to free memory immediately
     gc.collect()
     
-    print(f"Evaluated fitness: {fitness:.4f}")
+    # print(f"Evaluated fitness: {fitness:.4f}")
     return (fitness,)  # DEAP requires tuple
     
     # except Exception as e:
@@ -1174,7 +1227,7 @@ if __name__ == "__main__":
             passive=True,
             viewer_distance=5,
             viewer_lookat=[0,0,0.25],
-            realtime_speed=0.5,
+            realtime_speed=1,
             duration=4.0,
             control_preset=True,
             record_video=args.record

@@ -39,11 +39,48 @@ import multiprocessing
 from functools import partial
 import shutil
 import json
+import trimesh
+
 
 # DEAP imports
 from deap import base, creator, tools, algorithms
 import time
 
+# ============================================================================
+# Site points generation
+# ============================================================================
+def process_stl_points(file_path):
+    # 1. Load the mesh
+    # Trimesh automatically merges duplicate vertices, creating a 'watertight' mesh
+    mesh = trimesh.load(file_path)
+
+    print(f"Mesh loaded: {len(mesh.vertices)} vertices, {len(mesh.faces)} faces.")
+
+    # --- A. Extract Original Vertices ---
+    # mesh.vertices returns an (N, 3) array of unique XYZ coordinates
+    original_vertices = mesh.vertices
+    
+    # --- B. Calculate Face Centroids ---
+    # The centroid is the average of the three vertices making up the face.
+    # Trimesh has a built-in property for this.
+    face_centroids = mesh.triangles_center
+    
+    # --- C. Calculate Edge Midpoints ---
+    # mesh.edges_unique returns an (M, 2) list of vertex INDICES.
+    # We use these indices to grab the actual coordinates from mesh.vertices.
+    unique_edges = mesh.edges_unique
+    
+    # Get the coordinates for the start and end of every unique edge
+    # edge_starts has shape (M, 3), edge_ends has shape (M, 3)
+    edge_starts = mesh.vertices[unique_edges[:, 0]]
+    edge_ends = mesh.vertices[unique_edges[:, 1]]
+    
+    # Calculate midpoint: (Start + End) / 2
+    edge_midpoints = (edge_ends + edge_starts) / 2
+
+    all_points = np.vstack((original_vertices, face_centroids, edge_midpoints))
+
+    return all_points
 
 # ============================================================================
 # Configuration
@@ -53,15 +90,15 @@ class GAConfig:
     """Configuration for Genetic Algorithm using DEAP"""
     
     # GA Parameters
-    POPULATION_SIZE = 100
-    NUM_GENERATIONS = 50
+    POPULATION_SIZE = 30
+    NUM_GENERATIONS = 30
     TOURNAMENT_SIZE = 3
     CROSSOVER_PROB = 0.7
     MUTATION_PROB = 0.05
     ELITE_SIZE = 5
     
     # Parallelization
-    NUM_PROCESSES = None  # None = use all CPU cores, or set to specific number
+    NUM_PROCESSES = 1 # None = use all CPU cores, or set to specific number
     
     # Body and Simulation Parameters
     RADIUS = 0.01  # radius of chopstick
@@ -74,7 +111,7 @@ class GAConfig:
     N_SITES_ARM = N_SITES_ARM_X * N_SITES_ARM_Y * N_SITES_ARM_Z  # Total sites per chopstick
     
     # For tetrahedron: 4 vertices + 6 edge midpoints + 4 face centers + 12 edge quarter points + 1 center = 27 sites
-    N_SITES_OBJECT = 27  # Total sites on tetrahedron (flat indexing, not grid)
+      # Total sites on tetrahedron (flat indexing, not grid)
     
     MARGIN_R_ARM = 0
     MARGIN_Z_ARM = 0
@@ -98,9 +135,9 @@ class GAConfig:
     # Fitness weights
     CONTACT_WEIGHT = 0
     HEIGHT_WEIGHT = 5
-    CENTRE_WEIGHT = 5
-    STABILITY_WEIGHT = 2
-    EFFICIENCY_WEIGHT = 2
+    CENTRE_WEIGHT = 0
+    STABILITY_WEIGHT = 0
+    EFFICIENCY_WEIGHT = 0
     
     # Checkpoint
     CHECKPOINT_DIR = "ga_checkpoints"
@@ -117,7 +154,11 @@ class GAConfig:
     LIFT_DURATION = 1.5       # seconds to keep applying the lift (None = indefinite)
     LIFT_FORCE = 20.0         # nominal upward force/torque magnitude
     
-
+    # points
+    MESH_SCALE = 0.002
+    points = process_stl_points("/Users/hassanshahristani/Documents/IIB/4th_year_project/meshes/tetrahedron.stl")
+    ALL_POINTS = points * MESH_SCALE
+    N_SITES_OBJECT = points.shape[0]  # Total sites on tetrahedron (flat indexing, not grid)
 
 # ============================================================================
 # DEAP Setup - Define Fitness and Individual
@@ -367,11 +408,12 @@ def build_model_from_genome(G, angle=None) -> MuJoCoSimulation:
     builder.add_body("platform", pos=[0.5, 0, 0.1],
                         geom_type="box", geom_size=[0.2, 0.2, 0.1],
                         free_joint=False, geom_rgba=[0.7,0.5,0.5,1], mass=10)
-    mesh_scale = 0.003
+
     # Add mesh asset for tetrahedron
     builder.add_mesh("tetrahedron_mesh", 
                      file="/Users/hassanshahristani/Documents/IIB/4th_year_project/meshes/tetrahedron.stl",
-                     scale=[mesh_scale, mesh_scale, mesh_scale])  # STL files often need scaling
+                     scale=[GAConfig.MESH_SCALE, GAConfig.MESH_SCALE, GAConfig.MESH_SCALE])  # STL files often need scaling
+
     builder.add_body("target", pos=[0.5, 0, 0.3],
                      quat=orientation,
                      geom_type="mesh", 
@@ -469,67 +511,11 @@ def build_model_from_genome(G, angle=None) -> MuJoCoSimulation:
     times["add_arm_sites"] = time.perf_counter() - t0
 
     t0 = time.perf_counter()
-    # Tetrahedron-specific site placement (matching the STL geometry with scale 0.002)
-    # The STL has vertices at (in meters after scaling):
-    #   V0: [-0.07, -0.0606, 0.0]     (base vertex, back-left)
-    #   V1: [0.0, -0.0202, 0.14]      (apex)
-    #   V2: [0.0, 0.0606, 0.0]        (base vertex, front)
-    #   V3: [0.07, -0.0606, 0.0]      (base vertex, back-right)
-    # Centroid is approximately at [0, -0.02, 0.035]
-    
-    # Define tetrahedron vertices in STL coordinates (mm), then scale to meters
-    # MuJoCo places the mesh at STL origin [0,0,0], NOT at the centroid
-    # The body_ipos shows offset from origin to CoM, but geometry is at STL coords
-    
-    tetra_vertices = np.array([
-        [-35.0, -30.311, 0.0],      # V0 - base back-left
-        [0.0, -10.104, 70.008],     # V1 - apex
-        [0.0, 30.311, 0.0],         # V2 - base front
-        [35.0, -30.311, 0.0],       # V3 - base back-right
-    ]) * mesh_scale  # Convert mm to meters with scale
-    
-    # Note: We do NOT center these vertices - they must match the actual STL coordinates
-    # which is where MuJoCo places the mesh geometry
-    
-    # Build list of site positions for the tetrahedron (in mesh local coords)
-    object_sites = []
-    
-    # 1. Vertices (4 sites)
-    for i, v in enumerate(tetra_vertices):
-        object_sites.append(v.copy())
-    
-    # 2. Edge midpoints (6 edges)
-    edges = [(0,1), (0,2), (0,3), (1,2), (1,3), (2,3)]
-    for v1_idx, v2_idx in edges:
-        midpoint = (tetra_vertices[v1_idx] + tetra_vertices[v2_idx]) / 2
-        object_sites.append(midpoint)
-    
-    # 3. Face centers (4 faces)
-    # Calculate centroid for outward direction
-    centroid = np.mean(tetra_vertices, axis=0)
-    faces = [(0,1,2), (0,1,3), (0,2,3), (1,2,3)]
-    for f in faces:
-        face_center = np.mean([tetra_vertices[i] for i in f], axis=0)
-        # Push slightly outward from centroid for better grip
-        direction = face_center - centroid
-        direction = direction / (np.linalg.norm(direction) + 1e-6)
-        object_sites.append(face_center + direction * 0.005)
-    
-    # 4. Points along edges (for more attachment options)
-    for v1_idx, v2_idx in edges:
-        for t in [0.25, 0.75]:  # Quarter points along each edge
-            point = tetra_vertices[v1_idx] * (1-t) + tetra_vertices[v2_idx] * t
-            object_sites.append(point)
-    
-    # 5. Center point (actual centroid of tetrahedron)
-    object_sites.append(centroid.copy())
-    
-    # Convert to numpy array
-    object_sites = np.array(object_sites)
     
     # Update N_SITES_OBJECT to match actual number of sites
     # Note: This is now a flat list, not a grid, so indexing changes
-    actual_n_sites_object = len(object_sites)
+    object_sites = GAConfig.ALL_POINTS
+    
     
     times["compute_object_site_grid"] = time.perf_counter() - t0
 
@@ -546,6 +532,7 @@ def build_model_from_genome(G, angle=None) -> MuJoCoSimulation:
             rgba=[0,1,0,0.5]
         )
         object_site_count += 1
+        print(f"Added object site {site_name} at position {pos}")
     times["add_object_sites"] = time.perf_counter() - t0
 
     t0 = time.perf_counter()
@@ -1320,6 +1307,10 @@ if __name__ == "__main__":
             record_video=args.record
             )
     else:
+        mesh_scale = 0.002
+        all_points = process_stl_points("/Users/hassanshahristani/Documents/IIB/4th_year_project/meshes/tetrahedron.stl")
+        print(all_points)
+        all_points *= mesh_scale
         # Run evolution
         run_evolution(visualize=args.visualize, resume=args.resume, 
                      plot_stats=args.stats, num_processes=args.parallel)

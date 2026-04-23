@@ -53,45 +53,73 @@ class GAConfig:
     """Configuration for Genetic Algorithm using DEAP"""
     
     # GA Parameters
-    POPULATION_SIZE = 5
-    NUM_GENERATIONS = 1
-    TOURNAMENT_SIZE = 3
+    POPULATION_SIZE = 70
+    NUM_GENERATIONS = 750
+    TOURNAMENT_SIZE = 2
     CROSSOVER_PROB = 0.7
-    MUTATION_PROB = 0.05
-    ELITE_SIZE = 5
+    MUTATION_PROB = 0.1
+    ELITE_SIZE = 3
     
     # Parallelization
     NUM_PROCESSES = None  # None = use all CPU cores, or set to specific number
     
     # Body and Simulation Parameters
     RADIUS = 0.01  # radius of chopstick
-    HALF_LENGTH = 0.15  # half length of chopstick
+    HALF_LENGTH = 0.09  # half length of chopstick
 
     # Site parameters
     N_SITES_ARM_X = 3  # Number of connection sites per chopstick 
     N_SITES_ARM_Y = 3  # Number of connection sites per chopstick 
-    N_SITES_ARM_Z = 5  # Number of connection sites per chopstick
+    N_SITES_ARM_Z = 6  # Number of connection sites per chopstick
     N_SITES_ARM = N_SITES_ARM_X * N_SITES_ARM_Y * N_SITES_ARM_Z  # Total sites per chopstick
-    N_SITES_OBJECT_X = 4  # Number of connection sites on object 
-    N_SITES_OBJECT_Y = 4  # Number of connection sites on object 
-    N_SITES_OBJECT_Z = 4  # Number of connection sites on object 
+    N_SITES_OBJECT_X = 5  # Number of connection sites on object 
+    N_SITES_OBJECT_Y = 5  # Number of connection sites on object 
+    N_SITES_OBJECT_Z = 5  # Number of connection sites on object 
     N_SITES_OBJECT = N_SITES_OBJECT_X * N_SITES_OBJECT_Y * N_SITES_OBJECT_Z  # Total sites on object
-    MARGIN_R_ARM = 0
+    N_SITES_LINK5_X = 2
+    N_SITES_LINK5_Y = 2
+    N_SITES_LINK5_Z = 2
+    N_SITES_LINK4_X = 2
+    N_SITES_LINK4_Y = 2
+    N_SITES_LINK4_Z = 2
+    N_SITES_BODY_X = 2
+    N_SITES_BODY_Y = 2
+    N_SITES_BODY_Z = 2
+    MARGIN_R_ARM = 0.01
     MARGIN_Z_ARM = 0
-    MARGIN_R_OBJECT = 0
-    MARGIN_Z_OBJECT = 0
+    MARGIN_R_OBJECT = 0.01
+    MARGIN_Z_OBJECT = 0.01
+    BOX_DIM = 0.025
 
     # Tendon parameters
-    MIN_STIFFNESS = 10.0   # N/m
-    MAX_STIFFNESS = 100.0  # N/m
+    MIN_STIFFNESS = 0.0   # N/m
+    MAX_STIFFNESS = 20.0  # N/m
     MIN_DAMPING = 1.0      # N*s/m
-    MAX_DAMPING = 50.0     # N*s/m
+    MAX_DAMPING = 5.0     # N*s/m
+    MIN_SPRING_LENGTH = 0.0
+    MAX_SPRING_LENGTH = 0.1
     TENDON_NUM = 4
-    
+
+    # Connection groups define what can connect to what, and how many tendons.
+    # spring_mode:
+    #   - "range": springlength=[0, length]
+    #   - "fixed": springlength=[length, length]
+    CONNECTION_GROUPS = [
+        {"name": "left_to_target", "src": "left_chopstick", "dst": "target", "num_tendons": 4, "spring_mode": "fixed"},
+        {"name": "right_to_target", "src": "right_chopstick", "dst": "target", "num_tendons": 4, "spring_mode": "fixed"},
+        {"name": "right_to_left", "src": "right_chopstick", "dst": "left_chopstick", "num_tendons": 4, "spring_mode": "fixed"},
+        {"name": "r_link6_to_target", "src": "r_link6", "dst": "target", "num_tendons": 0, "spring_mode": "fixed"},
+        {"name": "l_link6_to_target", "src": "l_link6", "dst": "target", "num_tendons": 0, "spring_mode": "fixed"},
+        {"name": "link5_to_link5", "src": "r_link5", "dst": "l_link5", "num_tendons": 0, "spring_mode": "fixed"},
+        {"name": "left_link4_to_body", "src": "l_link4", "dst": "body_link", "num_tendons": 0, "spring_mode": "fixed"},
+        {"name": "right_link4_to_body", "src": "r_link4", "dst": "body_link", "num_tendons": 0, "spring_mode": "fixed"},
+    ]
+
     # Mutation parameters
     FLIP_PROB = 0.3        # Probability to flip each connection
     GAUSSIAN_MU = 0.0
     GAUSSIAN_SIGMA = 10.0  # For stiffness/damping mutation
+    LENGTH_SIGMA = 0.002    # For spring length mutation
     
     # Simulation parameters
     SIM_DURATION = 4.0     # seconds
@@ -99,10 +127,33 @@ class GAConfig:
     
     # Fitness weights
     CONTACT_WEIGHT = 0
-    HEIGHT_WEIGHT = 5
-    CENTRE_WEIGHT = 5
-    STABILITY_WEIGHT = 2
-    EFFICIENCY_WEIGHT = 2
+    HEIGHT_WEIGHT = 6
+    HEIGHT_FINAL_RATIO = 1
+    HEIGHT_INTEGRAL_RATIO = 0
+    CENTRE_WEIGHT = 0
+    FORCE_PENALTY_WEIGHT = 0
+    CONTROL_EFFORT_WEIGHT = 0
+    CONTROL_SMOOTHNESS_WEIGHT = 0
+    ROBUSTNESS_WEIGHT = 0
+    STABILITY_WEIGHT = 0
+    EFFICIENCY_WEIGHT = 0
+
+    # Evaluation scenarios (3 trials): vary target x, target yaw, and arm start pose.
+    TARGET_BASE_X = 0.4
+    TARGET_BASE_Y = 0.0
+    TARGET_BASE_Z = 0.3
+    TARGET_TRIAL_X_OFFSETS = (-0.05, 0.0, 0.05, -0.1, 0.1)
+    TARGET_TRIAL_YAWS = (-np.pi/5, 0.0, np.pi/5)
+    TARGET_TRIAL_Y_OFFSETS = (-0.05, 0.0, 0.05, -0.1, 0.1)
+    # Per-step disturbance during rollout (applied directly to target freejoint pose).
+    TARGET_STEP_JITTER_X = 0.0005      # +/- m per sim step
+    TARGET_STEP_JITTER_Y = 0.0005      # +/- m per sim step
+    TARGET_STEP_YAW_JITTER = np.deg2rad(0.2)  # +/- rad per sim step
+    ARM_TRIAL_PERTURBATIONS = (
+        # {"r_arm_joint1": -0.10, "r_arm_joint2": 0.08, "l_arm_joint1": 0.10, "l_arm_joint2": -0.08},
+         {},{},{},{},{},{},{},
+        # {"r_arm_joint1": 0.10, "r_arm_joint2": -0.08, "l_arm_joint1": -0.10, "l_arm_joint2": 0.08},
+    )
     
     # Checkpoint
     CHECKPOINT_DIR = "ga_checkpoints"
@@ -115,17 +166,20 @@ class GAConfig:
     RESULTS_DIR = "training_results"
 
     # Chopstick lift control parameters
-    LIFT_DELAY = 1.5         # seconds before applying the lift
-    LIFT_DURATION = 1.5       # seconds to keep applying the lift (None = indefinite)
+    LIFT_DELAY = 3         # seconds before applying the lift
+    LIFT_DURATION = 0.1       # seconds to keep applying the lift (None = indefinite)
     LIFT_FORCE = 20.0         # nominal upward force/torque magnitude
+    TORQUE_CLIP = 3.0         # absolute clip on generalized torque (Nm-equivalent)
 
     # Velocity-gain (damping) feedback delay.
     # Simulates real-world latency in the velocity feedback path: sensor sampling,
     # numerical differentiation of encoder position, communication, and actuator lag.
-    # With non-zero damping and non-zero delay the damping force responds to a stale
-    # velocity, introducing phase lag that can drive the closed loop into self-excited
-    # oscillation (dead-time instability). Set to 0.0 to recover MuJoCo's instantaneous
-    # damping behaviour.
+    # TendonTorqueController already bypasses MuJoCo's native damping and computes
+    # forces from per-tendon (k, b, l0); enabling a non-zero delay here makes the
+    # damping term -b*v respond to a *stale* velocity reading. Phase lag in this loop
+    # is the mechanism that drives the real rig into self-excited oscillation when
+    # damping is high (classical dead-time instability). Set to 0.0 to recover the
+    # instantaneous-velocity behaviour of v2.
     VELOCITY_DELAY = 0.02     # seconds of delay applied to tendon velocity used for damping
 
 
@@ -143,6 +197,44 @@ creator.create("Individual", np.ndarray, fitness=creator.FitnessMax)
 # Genome Encoding/Decoding
 # ============================================================================
 
+def site_family_counts() -> Dict[str, Tuple[int, int, int]]:
+    """Site grid sizes for each connection family."""
+    return {
+        "left_chopstick": (GAConfig.N_SITES_ARM_X, GAConfig.N_SITES_ARM_Y, GAConfig.N_SITES_ARM_Z),
+        "right_chopstick": (GAConfig.N_SITES_ARM_X, GAConfig.N_SITES_ARM_Y, GAConfig.N_SITES_ARM_Z),
+        "target": (GAConfig.N_SITES_OBJECT_X, GAConfig.N_SITES_OBJECT_Y, GAConfig.N_SITES_OBJECT_Z),
+        "l_link6": (GAConfig.N_SITES_LINK5_X, GAConfig.N_SITES_LINK5_Y, GAConfig.N_SITES_LINK5_Z),
+        "r_link6": (GAConfig.N_SITES_LINK5_X, GAConfig.N_SITES_LINK5_Y, GAConfig.N_SITES_LINK5_Z),
+        "l_link5": (GAConfig.N_SITES_LINK5_X, GAConfig.N_SITES_LINK5_Y, GAConfig.N_SITES_LINK5_Z),
+        "r_link5": (GAConfig.N_SITES_LINK5_X, GAConfig.N_SITES_LINK5_Y, GAConfig.N_SITES_LINK5_Z),
+        "l_link4": (GAConfig.N_SITES_LINK4_X, GAConfig.N_SITES_LINK4_Y, GAConfig.N_SITES_LINK4_Z),
+        "r_link4": (GAConfig.N_SITES_LINK4_X, GAConfig.N_SITES_LINK4_Y, GAConfig.N_SITES_LINK4_Z),
+        "body_link": (GAConfig.N_SITES_BODY_X, GAConfig.N_SITES_BODY_Y, GAConfig.N_SITES_BODY_Z),
+    }
+
+
+def family_site_count(family: str) -> int:
+    nx, ny, nz = site_family_counts()[family]
+    return nx * ny * nz
+
+
+def expanded_gene_specs() -> List[Dict[str, object]]:
+    specs: List[Dict[str, object]] = []
+    for group in GAConfig.CONNECTION_GROUPS:
+        specs.extend([group] * int(group["num_tendons"]))
+    return specs
+
+
+def site_name_from_index(family: str, flat_idx: int) -> Optional[str]:
+    nx, ny, nz = site_family_counts()[family]
+    total = nx * ny * nz
+    if flat_idx < 0 or flat_idx >= total:
+        return None
+    i = int(flat_idx % nx)
+    j = int((flat_idx // nx) % ny)
+    k = int(flat_idx // (nx * ny))
+    return f"{family}_site_{i}_{j}_{k}"
+
 def create_individual():
     """
     Create a random individual.
@@ -156,32 +248,21 @@ def create_individual():
     
     
 
+    gene_specs = expanded_gene_specs()
+
     genome = []
-    
-    # Adjacency left to obj
-    for _ in range(GAConfig.TENDON_NUM):
-        pairing_left = np.random.randint(-1, GAConfig.N_SITES_ARM)
-        pairing_obj = np.random.randint(-1, GAConfig.N_SITES_OBJECT)
-        genome.append((pairing_left, pairing_obj, 0, 0, 0))
-    # Adjacency right to obj
-    for _ in range(GAConfig.TENDON_NUM):
-        pairing_right = np.random.randint(-1, GAConfig.N_SITES_ARM)
-        pairing_obj = np.random.randint(-1, GAConfig.N_SITES_OBJECT)
-        genome.append((pairing_right, pairing_obj, 0, 0, 0))
-    # Adjacency right to left
-    for _ in range(GAConfig.TENDON_NUM):
-        pairing_right = np.random.randint(-1, GAConfig.N_SITES_ARM)
-        pairing_left = np.random.randint(-1, GAConfig.N_SITES_ARM)
-        genome.append((pairing_right, pairing_left, 0, 0, 0))
+    for spec in gene_specs:
+        src_idx = np.random.randint(-1, family_site_count(spec["src"]))
+        dst_idx = np.random.randint(-1, family_site_count(spec["dst"]))
+        genome.append((src_idx, dst_idx, 0, 0, 0))
     
     genome = np.array(genome, dtype=float)
     for i in range(len(genome)):
         stiffness = random.uniform(GAConfig.MIN_STIFFNESS, GAConfig.MAX_STIFFNESS)
         damping = random.uniform(GAConfig.MIN_DAMPING, GAConfig.MAX_DAMPING)
-        # Generate length with higher probability for values closer to 0
-        # Using exponential distribution for bias towards 0
-        length = np.random.exponential(scale=0.05)
-        length = min(length, 0.2)  # Cap
+        # Generate length with higher probability for values closer to 0.
+        length = np.random.exponential(scale=0.005)
+        length = min(length, GAConfig.MAX_SPRING_LENGTH)  # Cap
         
         genome[i, 2:] = (stiffness, damping, length)
     return creator.Individual(genome)
@@ -200,218 +281,201 @@ def decode_genome(individual: creator.Individual) -> Tuple[np.ndarray, np.ndarra
     with open("debug_individual.txt", "a") as f:
         f.write(str(individual) + "\n")
 
+    gene_specs = expanded_gene_specs()
+
     G = nx.Graph()
+    for index in range(min(individual.shape[0], len(gene_specs))):
+        spec = gene_specs[index]
+        src_i = int(individual[index][0])
+        dst_i = int(individual[index][1])
+        if src_i < 0 or dst_i < 0:
+            continue
 
-    for index in range(individual.shape[0]):
-        if index < GAConfig.TENDON_NUM * 2:
-        
-            obj_i = individual[index][1]
-            arm_i = individual[index][0]
+        src_name = site_name_from_index(spec["src"], src_i)
+        dst_name = site_name_from_index(spec["dst"], dst_i)
+        if src_name is None or dst_name is None:
+            continue
 
-            if obj_i < 0 or arm_i < 0:
-                continue
-            stiffness = individual[index][2]
-            damping = individual[index][3]
+        stiffness = float(individual[index][2])
+        damping = float(individual[index][3])
+        length = float(max(GAConfig.MIN_SPRING_LENGTH, min(GAConfig.MAX_SPRING_LENGTH, individual[index][4])))
+        spring_mode = spec.get("spring_mode", "range")
+        springlength = [length, length] if spring_mode == "fixed" else [0.0, length]
 
-            obj_x = ( obj_i % (GAConfig.N_SITES_OBJECT_X * GAConfig.N_SITES_OBJECT_Y) ) % GAConfig.N_SITES_OBJECT_X
-            obj_y = ( obj_i % (GAConfig.N_SITES_OBJECT_X * GAConfig.N_SITES_OBJECT_Y) ) // GAConfig.N_SITES_OBJECT_X
-            obj_z = ( obj_i // (GAConfig.N_SITES_OBJECT_X * GAConfig.N_SITES_OBJECT_Y) )
-
-            arm_x = ( arm_i % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) % GAConfig.N_SITES_ARM_X
-            arm_y = ( arm_i % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) // GAConfig.N_SITES_ARM_X
-            arm_z = ( arm_i // (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) )
-
-            arm_x = int(arm_x)
-            arm_y = int(arm_y)
-            arm_z = int(arm_z)
-            obj_x = int(obj_x)
-            obj_y = int(obj_y)
-            obj_z = int(obj_z)
-
-            if index < GAConfig.TENDON_NUM:
-                # Left chopstick
-                G.add_edge(f"left_chopstick_site_{arm_x}_{arm_y}_{arm_z}", f"ghost_target_site_{obj_x}_{obj_y}_{obj_z}", 
-                           type='spatial',
-                           stiffness=stiffness,
-                           damping=damping,
-                           springlength=[0, 0.01])
-            else:
-                # Right chopstick
-                G.add_edge(f"right_chopstick_site_{arm_x}_{arm_y}_{arm_z}", f"ghost_target_site_{obj_x}_{obj_y}_{obj_z}", 
-                           type='spatial',
-                           stiffness=stiffness,
-                           damping=damping,
-                           springlength=[0, 0.01])
-            
-            # print(individual[index], " : ", f"{'left' if index < GAConfig.TENDON_NUM else 'right'}_chopstick_site_{arm_x}_{arm_y}_{arm_z} <-> ghost_target_site_{obj_x}_{obj_y}_{obj_z}")
-            
-        else:
-        
-            arm_i = individual[index][0]
-            arm_j = individual[index][1]
-
-            if arm_i < 0 or arm_j < 0:
-                continue
-            stiffness = individual[index][2]
-            damping = individual[index][3]
-            length = individual[index][4]
-
-            arm_i_x = ( arm_i % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) % GAConfig.N_SITES_ARM_X
-            arm_i_y = ( arm_i % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) // GAConfig.N_SITES_ARM_X
-            arm_i_z = ( arm_i // (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) )
-
-            arm_j_x = ( arm_j % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) % GAConfig.N_SITES_ARM_X
-            arm_j_y = ( arm_j % (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) ) // GAConfig.N_SITES_ARM_X
-            arm_j_z = ( arm_j // (GAConfig.N_SITES_ARM_X * GAConfig.N_SITES_ARM_Y) )
-
-            arm_i_x = int(arm_i_x)
-            arm_i_y = int(arm_i_y)
-            arm_i_z = int(arm_i_z)
-            arm_j_x = int(arm_j_x)
-            arm_j_y = int(arm_j_y)
-            arm_j_z = int(arm_j_z)
-
-            G.add_edge(f"right_chopstick_site_{arm_i_x}_{arm_i_y}_{arm_i_z}", f"left_chopstick_site_{arm_j_x}_{arm_j_y}_{arm_j_z}", 
-                       type='spatial',
-                       stiffness=stiffness,
-                       damping=damping,
-                       springlength=[length, length]
-                       )
+        G.add_edge(
+            src_name,
+            dst_name,
+            type='spatial',
+            stiffness=stiffness,
+            damping=damping,
+            springlength=springlength,
+        )
 
     return G
 
 
 
 # ============================================================================
-# Ghost Control Callback
+# Torque Control Callback (tendon Jacobian -> actuator torques)
 # ============================================================================
-def control(target, ghost_target,
-            lift_delay: float = GAConfig.LIFT_DELAY,
-            lift_force: float = GAConfig.LIFT_FORCE,
-            lift_duration: float = GAConfig.LIFT_DURATION,
-            velocity_delay: float = GAConfig.VELOCITY_DELAY,
-            ):
-    """
-    Control ghost target to follow target position, ramp up lifting tendon stiffness,
-    and apply *delayed* velocity-gain (damping) to every tendon.
+class TendonTorqueController:
+    """Virtual tendon controller that drives robot via actuator torques."""
 
-    Why the delayed damping matters:
-        In the real rig the damping term d*v is not applied from an instantaneous
-        velocity measurement. Encoder differentiation, filtering, communication and
-        actuator response all introduce latency. With finite damping and finite delay,
-        the damping force is phase-shifted relative to the true velocity; above a
-        critical frequency it becomes positive feedback and the grasp oscillates or
-        diverges. This mirrors the instability observed experimentally.
+    def __init__(
+        self,
+        sim: MuJoCoSimulation,
+        tendon_names: Optional[List[str]] = None,
+        lift_tendon_names: Optional[List[str]] = None,
+        lift_delay: float = GAConfig.LIFT_DELAY,
+        lift_duration: float = GAConfig.LIFT_DURATION,
+        torque_clip: float = GAConfig.TORQUE_CLIP,
+        velocity_delay: float = GAConfig.VELOCITY_DELAY,
+    ):
+        self.sim = sim
+        self.model = sim.model
+        self.data = sim.data
+        self.lift_delay = lift_delay
+        self.lift_duration = lift_duration
+        self.torque_clip = torque_clip
 
-    Implementation:
-        On first invocation the native MuJoCo ``tendon_damping`` array is captured and
-        then zeroed so that MuJoCo's passive solver stops applying damping at all.
-        Each step we push the current ``ten_velocity`` into a ring buffer and read the
-        value from ``delay_steps`` samples ago. The damping force ``-d * v_delayed`` is
-        projected to generalized coordinates through the tendon Jacobian
-        (``qfrc_applied += ten_J.T @ f_tendon``) and applied as an external force,
-        which is numerically equivalent to native MuJoCo damping in the zero-delay
-        limit.
+        # Velocity-delay ring buffer.
+        # delay_steps = round(velocity_delay / dt); buffer holds delay_steps+1 samples
+        # so that index "now - delay_steps" is always a valid slot. Pre-filled with
+        # zeros, which matches the physical initial condition where every tendon
+        # starts at rest.
+        dt = float(self.model.opt.timestep)
+        self.velocity_delay = float(max(0.0, velocity_delay))
+        self.delay_steps = int(round(self.velocity_delay / dt)) if dt > 0 else 0
+        # Buffer is indexed later by the tendon's slot in self.tendon_ids, so its
+        # second dimension is populated after tendon_ids is known (below).
 
-    Args:
-        target: Joint wrapper for the tracked target.
-        ghost_target: Joint wrapper for the ghost target.
-        lift_delay: Seconds before applying the lift.
-        lift_force: Maximum tendon stiffness (N/m) to reach during lift.
-        lift_duration: Duration over which stiffness increases.
-        velocity_delay: Seconds of latency in the velocity feedback used for damping.
-            Rounded to the nearest integer number of simulation steps at runtime.
-    """
-
-    max_stiffness = lift_force * 20  # Reuse lift_force parameter as max stiffness
-
-    # Per-sim state for the delayed damping. Captured in closure so each built
-    # simulation gets its own ring buffer without interfering with others.
-    state = {
-        "initialised": False,
-        "damping": None,       # (ntendon,) original damping values
-        "buffer": None,        # (delay_steps+1, ntendon) ring buffer of ten_velocity
-        "buffer_idx": 0,       # next slot to write
-        "delay_steps": 0,
-    }
-
-    def _init_delay(self: MuJoCoSimulation):
-        ntendon = self.model.ntendon
-        # tendon_damping is shape (ntendon,) — flatten to be safe
-        state["damping"] = np.asarray(self.model.tendon_damping, dtype=float).reshape(-1).copy()
-        # Turn off MuJoCo's built-in damping so we can replace it with a delayed version.
-        self.model.tendon_damping[:] = 0.0
-        dt = self.model.opt.timestep
-        state["delay_steps"] = max(0, int(round(velocity_delay / dt))) if dt > 0 else 0
-        state["buffer"] = np.zeros((state["delay_steps"] + 1, ntendon), dtype=float)
-        state["buffer_idx"] = 0
-        state["initialised"] = True
-
-    def callback(self: MuJoCoSimulation):
-        # Keep ghost target synced with real target
-        ghost_target.qpos = target.qpos
-        ghost_target.qvel = target.qvel
-
-        if not state["initialised"]:
-            _init_delay(self)
-
-        current_time = self.time
-
-        # Calculate target stiffness based on time
-        if current_time < lift_delay:
-            target_stiffness = 0.0
-        elif current_time < lift_delay + lift_duration:
-            progress = (current_time - lift_delay) / lift_duration
-            smooth_progress = progress * progress * (3.0 - 2.0 * progress)
-            target_stiffness = smooth_progress * max_stiffness
+        if tendon_names is None:
+            self.tendon_ids = [
+                i for i in range(self.model.ntendon)
+                if mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_TENDON, i) is not None
+            ]
         else:
-            target_stiffness = max_stiffness
+            self.tendon_ids = []
+            for name in tendon_names:
+                t_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_TENDON, name)
+                if t_id != -1:
+                    self.tendon_ids.append(int(t_id))
 
-        # Apply stiffness to lifting tendons
-        try:
-            if 'left_lifter' not in self.tendons:
-                left_lifter = self.reg_tendon('left_lifter', 'left_lifter')
-                right_lifter = self.reg_tendon('right_lifter', 'right_lifter')
-            else:
-                left_lifter = self.tendons['left_lifter']
-                right_lifter = self.tendons['right_lifter']
+        self.k = np.zeros(len(self.tendon_ids), dtype=np.float64)
+        self.b = np.zeros(len(self.tendon_ids), dtype=np.float64)
+        self.l0 = np.zeros(len(self.tendon_ids), dtype=np.float64)
+        self.original_tendon_params: Dict[str, Dict[str, float]] = {}
 
-            self.model.tendon_stiffness[left_lifter.id] = target_stiffness
-            self.model.tendon_stiffness[right_lifter.id] = target_stiffness
+        for idx, t_id in enumerate(self.tendon_ids):
+            self.k[idx] = float(np.atleast_1d(self.model.tendon_stiffness[t_id])[0])
+            self.b[idx] = float(np.atleast_1d(self.model.tendon_damping[t_id])[0])
+            self.l0[idx] = float(np.atleast_1d(self.model.tendon_lengthspring[t_id])[-1])
+            t_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_TENDON, t_id)
+            if t_name is not None:
+                self.original_tendon_params[t_name] = {
+                    "stiffness": self.k[idx],
+                    "damping": self.b[idx],
+                    "length": self.l0[idx],
+                }
 
-        except Exception:
-            # Tendons might not exist in all models
-            pass
+            # Disable physical tendon forces; tendons remain visual/measurement elements.
+            self.model.tendon_stiffness[t_id] = 0.0
+            self.model.tendon_damping[t_id] = 0.0
 
-        # --- Delayed velocity-gain damping -------------------------------------
-        # Record current tendon velocity, fetch the delayed sample, and project
-        # the damping force back through the tendon Jacobian.
-        buf = state["buffer"]
-        idx = state["buffer_idx"]
-        buf_len = buf.shape[0]
+        self.lift_tendon_ids = set()
+        if lift_tendon_names is not None:
+            for name in lift_tendon_names:
+                t_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_TENDON, name)
+                if t_id != -1:
+                    self.lift_tendon_ids.add(int(t_id))
 
-        # Write current velocity at idx, then read sample from delay_steps ago.
-        buf[idx, :] = self.data.ten_velocity
-        delayed_idx = (idx - state["delay_steps"]) % buf_len
-        v_delayed = buf[delayed_idx]
-        state["buffer_idx"] = (idx + 1) % buf_len
+        self.actuator_map: List[Tuple[int, float]] = []
+        for i in range(self.model.nu):
+            jnt_id = int(self.model.actuator_trnid[i, 0])
+            if jnt_id < 0 or jnt_id >= self.model.njnt:
+                self.actuator_map.append((-1, 1.0))
+                continue
+            dof_adr = int(self.model.jnt_dofadr[jnt_id])
+            gear = float(self.model.actuator_gear[i, 0])
+            if abs(gear) < 1e-9:
+                gear = 1.0
+            self.actuator_map.append((dof_adr, gear))
 
-        # Damping force per tendon (scalar along each tendon's length direction).
-        f_tendon = -state["damping"] * v_delayed  # (ntendon,)
+        # Allocate ring buffer now that the number of controlled tendons is known.
+        # Shape: (delay_steps + 1, n_tendons). Index self._buf_idx is the slot we
+        # will write the current sample into on the next callback; reading from
+        # (idx - delay_steps) mod (delay_steps + 1) yields the velocity from
+        # delay_steps samples ago.
+        self._buf_len = self.delay_steps + 1
+        self._velocity_buffer = np.zeros((self._buf_len, len(self.tendon_ids)), dtype=np.float64)
+        self._buf_idx = 0
 
-        # Project to generalized coordinates via the tendon Jacobian.
-        # data.ten_J has shape (ntendon, nv) in the dense Python API.
-        ten_J = np.asarray(self.data.ten_J).reshape(self.model.ntendon, self.model.nv)
-        self.data.qfrc_applied[:] += ten_J.T @ f_tendon
+    def _lift_gain(self, current_time: float) -> float:
+        if current_time < self.lift_delay:
+            return 0.0
+        if self.lift_duration <= 0:
+            return 1.0
+        if current_time < self.lift_delay + self.lift_duration:
+            progress = (current_time - self.lift_delay) / self.lift_duration
+            return progress * progress * (3.0 - 2.0 * progress)
+        return 1.0
 
-    return callback
+    def callback(self, _sim: MuJoCoSimulation):
+        tau = np.zeros(self.model.nv, dtype=np.float64)
+        ten_j = self.data.ten_J
+        lift_gain = self._lift_gain(self.data.time)
+
+        # Push the current per-tendon velocities into the ring buffer and fetch
+        # the sample from delay_steps ago. When delay_steps == 0 the read and
+        # write point at the same slot, so the damping term uses the current
+        # velocity and we recover v2's behaviour exactly.
+        current_velocities = np.asarray(
+            [float(self.data.ten_velocity[t_id]) for t_id in self.tendon_ids],
+            dtype=np.float64,
+        )
+        self._velocity_buffer[self._buf_idx, :] = current_velocities
+        delayed_idx = (self._buf_idx - self.delay_steps) % self._buf_len
+        delayed_velocities = self._velocity_buffer[delayed_idx]
+        self._buf_idx = (self._buf_idx + 1) % self._buf_len
+
+        for idx, t_id in enumerate(self.tendon_ids):
+            length = float(self.data.ten_length[t_id])
+            # Spring force uses instantaneous length (position feedback is
+            # usually much faster than the velocity-estimation path); only the
+            # damping term is delayed, mirroring the physical failure mode.
+            velocity = float(delayed_velocities[idx])
+            force = -self.k[idx] * (length - self.l0[idx]) - self.b[idx] * velocity
+            if t_id in self.lift_tendon_ids:
+                force = 0 if length < 0.01 else force
+                force *= lift_gain
+            tau += ten_j[t_id] * force
+
+        tau = np.clip(tau, -self.torque_clip, self.torque_clip)
+
+        # Gravity compensation (if enabled) is already placed in data.ctrl upstream.
+        # We add torque commands on top.
+        for act_id, (dof_adr, gear) in enumerate(self.actuator_map):
+            if dof_adr < 0 or dof_adr >= self.model.nv:
+                continue
+            ctrl = float(self.data.ctrl[act_id] + tau[dof_adr] / gear)
+            if int(self.model.actuator_ctrllimited[act_id]) == 1:
+                lo = float(self.model.actuator_ctrlrange[act_id, 0])
+                hi = float(self.model.actuator_ctrlrange[act_id, 1])
+                ctrl = float(np.clip(ctrl, lo, hi))
+            self.data.ctrl[act_id] = ctrl
 
 
 # ============================================================================
 # Simulation & Fitness Evaluation
 # ============================================================================
 
-def build_model_from_genome(G, angle=None) -> MuJoCoSimulation:
+def build_model_from_genome(
+    G,
+    angle=None,
+    return_builder: bool = False,
+    target_pos: Optional[List[float]] = None,
+    joint_position_offsets: Optional[Dict[str, float]] = None,
+):
     """
     Build MuJoCo simulation from genome matrices, with timing breakdown.
     
@@ -434,23 +498,23 @@ def build_model_from_genome(G, angle=None) -> MuJoCoSimulation:
         orientation = quat_from_euler(0, 0, angle)
     else:
         orientation = quat_from_euler(0, 0, random.uniform(-math.pi/4, math.pi/4))
-    # Add a platform, target and object to place objects on
-    t0 = time.perf_counter()
-    builder.add_body("platform", pos=[0.5, 0, 0.1],
-                        geom_type="box", geom_size=[0.2, 0.2, 0.1],
-                        free_joint=False, geom_rgba=[0.7,0.5,0.5,1], mass=10)
 
-    builder.add_body("target", pos=[0.5, 0, 0.3],
+    if target_pos is not None:
+        target_position = target_pos
+    else:
+        target_position = [random.uniform(GAConfig.TARGET_BASE_X-0.05, GAConfig.TARGET_BASE_X+0.05), random.uniform(GAConfig.TARGET_BASE_Y-0.05, GAConfig.TARGET_BASE_Y+0.05), GAConfig.TARGET_BASE_Z]
+    # Add a platform and target object
+    t0 = time.perf_counter()
+    builder.add_body("platform", pos=[0.5, 0, 0.05],
+                        geom_type="box", geom_size=[0.2, 0.2, 0.05],
+                        free_joint=False, geom_rgba=[0.7,0.5,0.5,1], mass=10, friction=[0, 0.01, 0.001])
+
+    builder.add_body("target", pos=target_position,
                      quat=orientation,
-                        geom_type="box", geom_size=[0.05, 0.05, 0.05],
-                        free_joint=True, geom_rgba=[0,1,0,1], mass=0.3,
+                        geom_type="box", geom_size=[GAConfig.BOX_DIM, GAConfig.BOX_DIM, GAConfig.BOX_DIM],
+                        free_joint=True, geom_rgba=[0,1,0,1], mass=0.1, friction=[1, 0.01, 0.001]
                         )
     
-    builder.add_body("ghost_target", pos=[0.5, 0, 0.3],
-                        quat=orientation,
-                     geom_type="box", geom_size=[0.05, 0.05, 0.05],
-                     free_joint=True, geom_rgba=[1,1,1,0.1], mass=0.3, intersection=False,
-                     )
     times["add_static_bodies"] = time.perf_counter() - t0
 
     # colors for chopsticks
@@ -465,131 +529,128 @@ def build_model_from_genome(G, angle=None) -> MuJoCoSimulation:
     ]
 
     t0 = time.perf_counter()
-    builder.remove_body("r_link7")
-    builder.remove_body("l_link7")
+    # builder.remove_body("r_link7")
+    # builder.remove_body("l_link7")
     times["remove_end_links"] = time.perf_counter() - t0
 
     t0 = time.perf_counter()
-    builder.add_body("left_chopstick", pos=[0, 0.1, 0],
-                    quat=quat_from_euler(math.pi/2, 0, 0),
+    builder.add_body("left_chopstick", pos=[0, GAConfig.HALF_LENGTH, 0],
+                    quat=quat_from_euler(math.pi/2, -math.pi/8, 0),
                     geom_type="box", geom_size=[GAConfig.RADIUS, GAConfig.RADIUS, GAConfig.HALF_LENGTH],
                     parent="l_link6",
                     free_joint=False, geom_rgba=left_chopstick_color, mass=0.1,
-                    friction=[2.0, 0.01, 0.001])
-    builder.add_body("right_chopstick", pos=[0, -0.1, 0],
+                    friction=[1.0, 0.01, 0.001])
+    builder.add_body("right_chopstick", pos=[0, -GAConfig.HALF_LENGTH, 0],
                     quat=quat_from_euler(math.pi/2, 0, 0),
                     geom_type="box", geom_size=[GAConfig.RADIUS, GAConfig.RADIUS, GAConfig.HALF_LENGTH],
                     parent="r_link6",
                     free_joint=False, geom_rgba=right_chopstick_color, mass=0.1,
-                    friction=[2.0, 0.01, 0.001])
+                    friction=[1.0, 0.01, 0.001])
     times["add_chopstick_bodies"] = time.perf_counter() - t0
 
     # Adding mechanism to lift chopsticks
     builder.add_site('left_hand_site', body_name='l_link6', pos=[0, 0, 0], size=0.01)
-    builder.add_site('left_shoulder_site', body_name='body_link', pos=[0.2, 0.05, 0.4], size=0.01)
+    builder.add_site('left_shoulder_site', body_name='root', pos=np.array(target_position) + [0, 0.025, 0.0], size=0.01)
+    builder.add_site('left_chopstick_end', body_name='left_chopstick', pos=[0, 0, -0.09])
+    builder.add_site('left_shoulder_end', body_name='body_link', pos=[0.29, 0.05, 0.4])
     builder.add_site('right_hand_site', body_name='r_link6', pos=[0, 0, 0], size=0.01)
-    builder.add_site('right_shoulder_site', body_name='body_link', pos=[0.2, -0.05, 0.4], size=0.01)
+    builder.add_site('right_shoulder_site', body_name='root', pos=np.array(target_position) + [0, -0.025, 0.0], size=0.01)
+    builder.add_site('right_chopstick_end', body_name='right_chopstick', pos=[0, 0, 0.09])
+    builder.add_site('right_shoulder_end', body_name='body_link', pos=[0.29, -0.05, 0.4])
 
-    # Add lifting tendons (will be controlled dynamically)
-    builder.add_tendon('left_lifter', tendon_type='spatial',
-                       sites=['left_hand_site', 'left_shoulder_site'],
-                       stiffness=0.0,  # Will be increased dynamically
+    # Add lifting tendons (used by torque controller via tendon Jacobians)
+    # builder.add_tendon('left_lifter', tendon_type='spatial',
+    #                    sites=['left_hand_site', 'left_shoulder_site'],
+    #                    stiffness=GAConfig.LIFT_FORCE * 20.0,
+    #                    damping=5.0,
+    #                    springlength=[0.0, 0.1],
+    #                    rgba=[0, 0, 0, 0.5])
+    
+    # builder.add_tendon('right_lifter', tendon_type='spatial',
+    #                    sites=['right_hand_site', 'right_shoulder_site'],
+    #                    stiffness=GAConfig.LIFT_FORCE * 20.0,
+    #                    damping=5.0,
+    #                    springlength=[0.0, 0.1],
+    #                    rgba=[0, 0, 0, 0.5])
+
+    builder.add_tendon('left_end_lifter', tendon_type='spatial',
+                       sites=['left_chopstick_end', 'left_shoulder_site'],
+                       stiffness=GAConfig.LIFT_FORCE * 20.0,
                        damping=5.0,
                        springlength=[0.0, 0.1],
                        rgba=[0, 0, 0, 0.5])
     
-    builder.add_tendon('right_lifter', tendon_type='spatial',
-                       sites=['right_hand_site', 'right_shoulder_site'],
-                       stiffness=0.0,  # Will be increased dynamically
+    builder.add_tendon('right_end_lifter', tendon_type='spatial',
+                       sites=['right_chopstick_end', 'right_shoulder_site'],
+                       stiffness=GAConfig.LIFT_FORCE * 20.0,
                        damping=5.0,
                        springlength=[0.0, 0.1],
                        rgba=[0, 0, 0, 0.5])
+    
     
     times["add_lifting_mechanism"] = time.perf_counter() - t0
 
-    # Add sites for tendons
-    site_labels = []
+    # Add sites for all families referenced by connection groups.
+    family_cfg = {
+        "left_chopstick": {"body": "left_chopstick", "counts": (GAConfig.N_SITES_ARM_X, GAConfig.N_SITES_ARM_Y, GAConfig.N_SITES_ARM_Z), "extents": (GAConfig.RADIUS + GAConfig.MARGIN_R_ARM, GAConfig.RADIUS + GAConfig.MARGIN_R_ARM, GAConfig.HALF_LENGTH + GAConfig.MARGIN_Z_ARM), "size": 0.003, "rgba": [0, 1, 1, 1]},
+        "right_chopstick": {"body": "right_chopstick", "counts": (GAConfig.N_SITES_ARM_X, GAConfig.N_SITES_ARM_Y, GAConfig.N_SITES_ARM_Z), "extents": (GAConfig.RADIUS + GAConfig.MARGIN_R_ARM, GAConfig.RADIUS + GAConfig.MARGIN_R_ARM, GAConfig.HALF_LENGTH + GAConfig.MARGIN_Z_ARM), "size": 0.003, "rgba": [0, 1, 1, 1]},
+        "target": {"body": "target", "counts": (GAConfig.N_SITES_OBJECT_X, GAConfig.N_SITES_OBJECT_Y, GAConfig.N_SITES_OBJECT_Z), "extents": (GAConfig.BOX_DIM + GAConfig.MARGIN_R_OBJECT, GAConfig.BOX_DIM + GAConfig.MARGIN_R_OBJECT, GAConfig.BOX_DIM + GAConfig.MARGIN_Z_OBJECT), "size": 0.003, "rgba": [0, 1, 0, 0.3]},
+        "l_link6": {"body": "l_link6", "counts": (GAConfig.N_SITES_LINK5_X, GAConfig.N_SITES_LINK5_Y, GAConfig.N_SITES_LINK5_Z), "extents": (0.03, 0.03, 0.03), "size": 0.004, "rgba": [1, 0.8, 0, 0.8]},
+        "r_link6": {"body": "r_link6", "counts": (GAConfig.N_SITES_LINK5_X, GAConfig.N_SITES_LINK5_Y, GAConfig.N_SITES_LINK5_Z), "extents": (0.03, 0.03, 0.03), "size": 0.004, "rgba": [1, 0.8, 0, 0.8]},
+        "l_link5": {"body": "l_link5", "counts": (GAConfig.N_SITES_LINK5_X, GAConfig.N_SITES_LINK5_Y, GAConfig.N_SITES_LINK5_Z), "extents": (0.03, 0.03, 0.03), "size": 0.004, "rgba": [1, 0.8, 0, 0.8]},
+        "r_link5": {"body": "r_link5", "counts": (GAConfig.N_SITES_LINK5_X, GAConfig.N_SITES_LINK5_Y, GAConfig.N_SITES_LINK5_Z), "extents": (0.03, 0.03, 0.03), "size": 0.004, "rgba": [1, 0.8, 0, 0.8]},
+        "l_link4": {"body": "l_link4", "counts": (GAConfig.N_SITES_LINK4_X, GAConfig.N_SITES_LINK4_Y, GAConfig.N_SITES_LINK4_Z), "extents": (0.03, 0.03, 0.03), "size": 0.004, "rgba": [1, 0.4, 0.2, 0.8]},
+        "r_link4": {"body": "r_link4", "counts": (GAConfig.N_SITES_LINK4_X, GAConfig.N_SITES_LINK4_Y, GAConfig.N_SITES_LINK4_Z), "extents": (0.03, 0.03, 0.03), "size": 0.004, "rgba": [1, 0.4, 0.2, 0.8]},
+        "body_link": {"body": "body_link", "counts": (GAConfig.N_SITES_BODY_X, GAConfig.N_SITES_BODY_Y, GAConfig.N_SITES_BODY_Z), "extents": (0.08, 0.06, 0.08), "size": 0.005, "rgba": [1, 1, 0, 0.6]},
+    }
+    families_needed = set()
+    for group in GAConfig.CONNECTION_GROUPS:
+        families_needed.add(group["src"])
+        families_needed.add(group["dst"])
 
     t0 = time.perf_counter()
-    xs = np.linspace(-(GAConfig.RADIUS + GAConfig.MARGIN_R_ARM), (GAConfig.RADIUS + GAConfig.MARGIN_R_ARM), GAConfig.N_SITES_ARM_X)
-    ys = np.linspace(-(GAConfig.RADIUS + GAConfig.MARGIN_R_ARM), (GAConfig.RADIUS + GAConfig.MARGIN_R_ARM), GAConfig.N_SITES_ARM_Y)
-    zs = np.linspace(-(GAConfig.HALF_LENGTH + GAConfig.MARGIN_Z_ARM), (GAConfig.HALF_LENGTH + GAConfig.MARGIN_Z_ARM), GAConfig.N_SITES_ARM_Z)
-    times["compute_arm_site_grid"] = time.perf_counter() - t0
-
-    t0 = time.perf_counter()
-    arm_site_count = 0
-    for body_name, _, color in chopsticks:
+    total_sites_added = 0
+    for family in sorted(families_needed):
+        cfg = family_cfg[family]
+        nx, ny, nz = cfg["counts"]
+        ex, ey, ez = cfg["extents"]
+        xs = np.linspace(-ex, ex, nx)
+        ys = np.linspace(-ey, ey, ny)
+        zs = np.linspace(-ez, ez, nz)
         for i, x in enumerate(xs):
             for j, y in enumerate(ys):
                 for k, z in enumerate(zs):
-                    site_name = f"{body_name}_site_{i}_{j}_{k}"
-                    site_labels.append(site_name)
                     builder.add_site(
-                        name=site_name,
-                        body_name=body_name,
+                        name=f"{family}_site_{i}_{j}_{k}",
+                        body_name=cfg["body"],
                         pos=[float(x), float(y), float(z)],
-                        size=0.003,
-                        rgba=color
+                        size=cfg["size"],
+                        rgba=cfg["rgba"],
                     )
-                    arm_site_count += 1
-    times["add_arm_sites"] = time.perf_counter() - t0
-
-    t0 = time.perf_counter()
-    xs = np.linspace(-(0.05 + GAConfig.MARGIN_R_OBJECT), (0.05 + GAConfig.MARGIN_R_OBJECT), GAConfig.N_SITES_OBJECT_X)
-    ys = np.linspace(-(0.05 + GAConfig.MARGIN_R_OBJECT), (0.05 + GAConfig.MARGIN_R_OBJECT), GAConfig.N_SITES_OBJECT_Y)
-    zs = np.linspace(-(0.05 + GAConfig.MARGIN_Z_OBJECT), (0.05 + GAConfig.MARGIN_Z_OBJECT), GAConfig.N_SITES_OBJECT_Z)
-    times["compute_object_site_grid"] = time.perf_counter() - t0
-
-    t0 = time.perf_counter()
-    object_site_count = 0
-    for i, x in enumerate(xs):
-        for j, y in enumerate(ys):
-            for k, z in enumerate(zs):
-                site_name = f"ghost_target_site_{i}_{j}_{k}"
-                site_labels.append(site_name)
-                builder.add_site(
-                    name=site_name,
-                    body_name="ghost_target",
-                    pos=[float(x), float(y), float(z)],
-                    size=0.003,
-                    rgba=[0,1,0,0.3]
-                )
-                object_site_count += 1
-    times["add_object_sites"] = time.perf_counter() - t0
+                    total_sites_added += 1
+    times["add_connection_family_sites"] = time.perf_counter() - t0
 
     t0 = time.perf_counter()
     builder.add_tendons_from_graph(G)
     times["add_tendons_from_graph"] = time.perf_counter() - t0
 
     t0 = time.perf_counter()
-    sim = MuJoCoSimulation.from_builder(builder)
+    sim = MuJoCoSimulation.from_builder(builder, keep_builder_spec=return_builder)
     times["build_simulation"] = time.perf_counter() - t0
     
-    # Clean up builder and graph copy - we don't need them anymore
-    del builder
-    del G
-    gc.collect()
+    # Clean up builder and graph copy if caller doesn't need builder for export.
+    if not return_builder:
+        del builder
+        del G
+        gc.collect()
 
     t0 = time.perf_counter()
-    target_joint = sim.reg_joint('target_joint', 'target_freejoint')
-    ghost_target_joint = sim.reg_joint('ghost_target_joint', 'ghost_target_freejoint')
-    
-    # Set up controller with lifting tendon control and delayed damping.
-    controller = control(
-        target_joint,
-        ghost_target_joint,
-        lift_delay=GAConfig.LIFT_DELAY,
-        lift_force=GAConfig.LIFT_FORCE,
-        lift_duration=GAConfig.LIFT_DURATION,
-        velocity_delay=GAConfig.VELOCITY_DELAY,
-    )
-    sim.set_control_callback(controller, gravity_comp=True)
     # Set initial joint positions for arms
     initial_joint_positions = np.array([0.05062136600022616, -0.3436116964863836, -1.3959225169759335, 
                     0.10584467436410924, -1.5539225381281545, 0.09817477042468103, 2.741223667951641,
-                    0.02761165418194154, -1.7916895602504288, -1.6122138080678088, 0.0, 
+                    0.02761165418194154, -1.7916895602504288, -1.6122138080678088, 0.3, 
                     -0.0798, 1.53, 0.145, -2.26,
-                    0.0372, 1.07, -2, 0.5], dtype=np.float32)
+                    0.0372, 1.07, -2, -0.3], dtype=np.float32)
     joint_names = [
     "waist_yaw_joint", "neck_yaw_joint", "neck_pitch_joint",
     "r_arm_joint1","r_arm_joint2","r_arm_joint3","r_arm_joint4",
@@ -597,6 +658,10 @@ def build_model_from_genome(G, angle=None) -> MuJoCoSimulation:
     "l_arm_joint1","l_arm_joint2","l_arm_joint3","l_arm_joint4",
     "l_arm_joint5","l_arm_joint6","l_arm_joint7","l_hand_mimic_joint"
     ]
+    if joint_position_offsets:
+        for idx, name in enumerate(joint_names):
+            initial_joint_positions[idx] += float(joint_position_offsets.get(name, 0.0))
+
     for name, pos in zip(joint_names, initial_joint_positions):
         try:
             joint = sim.reg_joint(name, name)
@@ -606,6 +671,24 @@ def build_model_from_genome(G, angle=None) -> MuJoCoSimulation:
                 print(f"Error setting joint '{name}': {e}")
 
     sim.forward()
+
+    # Set up torque controller from tendon Jacobians (no ghost object sync).
+    tendon_names = [
+        name for i in range(sim.model.ntendon)
+        if (name := mujoco.mj_id2name(sim.model, mujoco.mjtObj.mjOBJ_TENDON, i)) is not None
+    ]
+    torque_controller = TendonTorqueController(
+        sim,
+        tendon_names=tendon_names,
+        lift_tendon_names=["left_lifter", "right_lifter", "left_end_lifter", "right_end_lifter"],
+        lift_delay=GAConfig.LIFT_DELAY,
+        lift_duration=GAConfig.LIFT_DURATION,
+        torque_clip=GAConfig.TORQUE_CLIP,
+        velocity_delay=GAConfig.VELOCITY_DELAY,
+    )
+    # Keep original tendon values for export; model tendon stiffness/damping are zeroed for torque control.
+    sim._tendon_export_params = torque_controller.original_tendon_params
+    sim.set_control_callback(torque_controller.callback, gravity_comp=True)
 
     times["register_joints_and_controller"] = time.perf_counter() - t0
 
@@ -631,6 +714,8 @@ def build_model_from_genome(G, angle=None) -> MuJoCoSimulation:
     # print(f"  register_joints/controller: {times['register_joints_and_controller']:.4f}s")
     # print(f"  TOTAL:                      {times['total_build_model_from_genome']:.4f}s")
 
+    if return_builder:
+        return sim, builder
     return sim
 
 def evaluate_fitness(individual: creator.Individual) -> Tuple[float,]:
@@ -647,10 +732,36 @@ def evaluate_fitness(individual: creator.Individual) -> Tuple[float,]:
     # print("Genome decoded")
     
     # Build simulation
-    fitness = 0.0
+    def _quat_mul(q1: np.ndarray, q2: np.ndarray) -> np.ndarray:
+        w1, x1, y1, z1 = q1
+        w2, x2, y2, z2 = q2
+        return np.array([
+            w1*w2 - x1*x2 - y1*y2 - z1*z2,
+            w1*x2 + x1*w2 + y1*z2 - z1*y2,
+            w1*y2 - x1*z2 + y1*w2 + z1*x2,
+            w1*z2 + x1*y2 - y1*x2 + z1*w2
+        ], dtype=np.float64)
+
+    trial_scores = []
+    trial_height_gains = []
+    trial_force_penalties = []
+    trial_angles = list(GAConfig.TARGET_TRIAL_YAWS)
+    trial_y_positions = [GAConfig.TARGET_BASE_Y + dy for dy in GAConfig.TARGET_TRIAL_Y_OFFSETS]
+    trial_x_positions = [GAConfig.TARGET_BASE_X + dx for dx in GAConfig.TARGET_TRIAL_X_OFFSETS]
+    arm_perturbations = list(GAConfig.ARM_TRIAL_PERTURBATIONS)
     trial_num = 3
-    for trial in range(trial_num):  # Can do multiple trials if desired
-        sim = build_model_from_genome(G, angle=np.pi/5 * (trial - 1))
+
+    for i in range(trial_num):
+        angle = random.choice(trial_angles)
+        x_pos = random.choice(trial_x_positions)
+        arm_offsets = random.choice(arm_perturbations)
+        y_pos = random.choice(trial_y_positions)
+        sim = build_model_from_genome(
+            G,
+            angle=angle,
+            target_pos=[x_pos, y_pos, GAConfig.TARGET_BASE_Z],
+            joint_position_offsets=arm_offsets,
+        )
         # print("Model built from genome")
         
         # Register bodies
@@ -662,6 +773,10 @@ def evaluate_fitness(individual: creator.Individual) -> Tuple[float,]:
         initial_height = target.pos[2]
         total_contact = 0.0
         total_velocity = 0.0
+        total_height_gain = 0.0
+        total_ctrl_effort = 0.0
+        total_ctrl_delta = 0.0
+        prev_ctrl = None
         n_steps = 0
 
         # Detect contact between chopsticks and target
@@ -674,10 +789,27 @@ def evaluate_fitness(individual: creator.Individual) -> Tuple[float,]:
         
         # Run simulation
         num_steps = int(GAConfig.SIM_DURATION / sim.model.opt.timestep)
+        target_jnt_id = mujoco.mj_name2id(sim.model, mujoco.mjtObj.mjOBJ_JOINT, "target_freejoint")
+        target_qadr = int(sim.model.jnt_qposadr[target_jnt_id]) if target_jnt_id != -1 else -1
 
         
         for _ in range(num_steps):
             sim.step()
+
+            # Apply small random pose disturbance to target during rollout for robustness.
+            if target_qadr != -1:
+                sim.data.qpos[target_qadr + 0] += random.uniform(-GAConfig.TARGET_STEP_JITTER_X, GAConfig.TARGET_STEP_JITTER_X)
+                sim.data.qpos[target_qadr + 1] += random.uniform(-GAConfig.TARGET_STEP_JITTER_Y, GAConfig.TARGET_STEP_JITTER_Y)
+
+                dyaw = random.uniform(-GAConfig.TARGET_STEP_YAW_JITTER, GAConfig.TARGET_STEP_YAW_JITTER)
+                dq = np.array([math.cos(dyaw * 0.5), 0.0, 0.0, math.sin(dyaw * 0.5)], dtype=np.float64)
+                q = np.array(sim.data.qpos[target_qadr + 3: target_qadr + 7], dtype=np.float64)
+                q_new = _quat_mul(dq, q)
+                q_norm = np.linalg.norm(q_new)
+                if q_norm > 1e-12:
+                    q_new /= q_norm
+                    sim.data.qpos[target_qadr + 3: target_qadr + 7] = q_new
+                mujoco.mj_forward(sim.model, sim.data)
             
             # Get contacts and sum forces
             contacts = contact_sensor.get_contacts()
@@ -689,13 +821,29 @@ def evaluate_fitness(individual: creator.Individual) -> Tuple[float,]:
             # Track target velocity (for stability)
             vel = np.linalg.norm(target.linear_vel)
             total_velocity += vel
+
+            # Penalize large torques and abrupt changes in control.
+            ctrl = sim.data.ctrl.copy()
+            total_ctrl_effort += float(np.mean(np.abs(ctrl)))
+            if prev_ctrl is not None:
+                total_ctrl_delta += float(np.mean(np.abs(ctrl - prev_ctrl)))
+            prev_ctrl = ctrl
+
+            # Track integrated height gain relative to initial pose
+            step_height_gain = target.pos[2] - initial_height
+            total_height_gain += step_height_gain
             n_steps += 1
         
 
         # Final height
         final_height = target.pos[2]
-        height_gain = final_height - initial_height
-        height_gain = height_gain if height_gain < 1.5 else 0
+        final_height_gain = final_height - initial_height
+        final_height_gain = final_height_gain if final_height_gain < 1.5 else 0
+        avg_height_gain = total_height_gain / n_steps if n_steps > 0 else 0.0
+        height_gain = (
+            GAConfig.HEIGHT_FINAL_RATIO * final_height_gain +
+            GAConfig.HEIGHT_INTEGRAL_RATIO * avg_height_gain
+        )
 
         final_centre_dist = np.linalg.norm(target.pos[:2] - np.array([0.5, 0.0]))
         dist = final_centre_dist if final_centre_dist > 0.05 else 0
@@ -710,13 +858,32 @@ def evaluate_fitness(individual: creator.Individual) -> Tuple[float,]:
 
         centre_dist = 1.0 / (1.0 + dist)
         
+        avg_contact_force = total_contact / n_steps if n_steps > 0 else 0.0
+        # Smooth bounded penalty in [0, 1) that increases with contact force.
+        contact_force_penalty = avg_contact_force / (1.0 + avg_contact_force)
+        avg_ctrl_effort = total_ctrl_effort / n_steps if n_steps > 0 else 0.0
+        avg_ctrl_delta = total_ctrl_delta / max(n_steps - 1, 1)
+        control_effort_penalty = avg_ctrl_effort / (1.0 + avg_ctrl_effort)
+        control_smoothness_penalty = avg_ctrl_delta / (1.0 + avg_ctrl_delta)
+
         # Weighted fitness
-        fitness += (GAConfig.CONTACT_WEIGHT * total_contact +
-                    GAConfig.HEIGHT_WEIGHT * height_gain +
-                    GAConfig.STABILITY_WEIGHT * stability +
-                    GAConfig.EFFICIENCY_WEIGHT * efficiency +
-                    GAConfig.CENTRE_WEIGHT * centre_dist
-                )
+        trial_score = (
+            GAConfig.CONTACT_WEIGHT * total_contact +
+            GAConfig.HEIGHT_WEIGHT * height_gain +
+            GAConfig.STABILITY_WEIGHT * stability +
+            GAConfig.EFFICIENCY_WEIGHT * efficiency +
+            GAConfig.CENTRE_WEIGHT * centre_dist -
+            GAConfig.FORCE_PENALTY_WEIGHT * contact_force_penalty -
+            GAConfig.CONTROL_EFFORT_WEIGHT * control_effort_penalty -
+            GAConfig.CONTROL_SMOOTHNESS_WEIGHT * control_smoothness_penalty
+        )
+        trial_scores.append(float(trial_score))
+        trial_height_gains.append(float(height_gain))
+        trial_force_penalties.append(float(
+            contact_force_penalty +
+            control_effort_penalty +
+            control_smoothness_penalty
+        ))
         
         # Clean up simulation resources
         sim.close()
@@ -725,8 +892,13 @@ def evaluate_fitness(individual: creator.Individual) -> Tuple[float,]:
         # Force garbage collection to free memory immediately
         gc.collect()
     
-    # print(f"Evaluated fitness: {fitness:.4f}")
-    fitness /= trial_num  # Average over trials
+    avg_trial_score = float(np.mean(trial_scores)) if trial_scores else 0.0
+    height_std = float(np.std(trial_height_gains)) if trial_height_gains else 0.0
+    score_std = float(np.std(trial_scores)) if trial_scores else 0.0
+    force_std = float(np.std(trial_force_penalties)) if trial_force_penalties else 0.0
+    robustness_bonus = 1.0 / (1.0 + height_std + 0.5 * score_std + 0.5 * force_std)
+
+    fitness = avg_trial_score + GAConfig.ROBUSTNESS_WEIGHT * robustness_bonus
     return (fitness,)  # DEAP requires tuple
     
     # except Exception as e:
@@ -745,50 +917,168 @@ def evaluate_fitness(individual: creator.Individual) -> Tuple[float,]:
     #     return (0.0,)  # Return zero fitness on error
 
 
+def export_model_and_tendon_json(sim: MuJoCoSimulation, run_dir: str, builder: Optional[ModelBuilder] = None) -> Tuple[str, str]:
+    """
+    Export model XML and tendon metadata JSON for external software.
+
+    Returns:
+        (xml_path, json_path)
+    """
+    xml_path = os.path.join(run_dir, "best_model.xml")
+    json_path = os.path.join(run_dir, "best_model_tendons.json")
+
+    # Save model as MJCF XML.
+    if builder is not None and builder.spec is not None:
+        builder.spec.to_file(xml_path)
+    else:
+        # Fallback path for models loaded directly from XML.
+        mujoco.mj_saveLastXML(xml_path, sim.model)
+
+    export_params = getattr(sim, "_tendon_export_params", {})
+    tendon_entries = []
+    for t_id in range(sim.model.ntendon):
+        name = mujoco.mj_id2name(sim.model, mujoco.mjtObj.mjOBJ_TENDON, t_id)
+        if name is None:
+            continue
+
+        if name in export_params:
+            k_val = float(export_params[name]["stiffness"])
+            b_val = float(export_params[name]["damping"])
+            l_val = float(export_params[name]["length"])
+        else:
+            k_arr = np.atleast_1d(sim.model.tendon_stiffness[t_id]).astype(float)
+            b_arr = np.atleast_1d(sim.model.tendon_damping[t_id]).astype(float)
+            l_arr = np.atleast_1d(sim.model.tendon_lengthspring[t_id]).astype(float)
+            k_val = float(k_arr[0])
+            b_val = float(b_arr[0])
+            l_val = float(l_arr[-1])
+
+        tendon_entries.append({
+            "name": name,
+            "cosntant": k_val,
+            "damping": b_val,
+            "rest_length": l_val,
+        })
+
+    with open(json_path, "w") as f:
+        json.dump(tendon_entries, f, indent=2)
+
+    return xml_path, json_path
+
+
 # ============================================================================
 # Genetic Operators
 # ============================================================================
 
 def mutate_individual(individual: creator.Individual) -> Tuple[creator.Individual,]:
     """
-    Mutate an individual.
-    
-    - Flip connections with FLIP_PROB
-    - Add Gaussian noise to stiffness/damping
+    Mutate an individual using:
+    - Polynomial bounded mutation for continuous parameters (stiffness, damping, length)
+    - Integer creep mutation for discrete connection indices (small local changes)
+    - Occasional random resampling for exploration
+
+    This balances exploitation (local integer moves) and exploration (random jumps).
     """
-    
-    # Mutate adjacency (flip bits)
+    gene_specs = expanded_gene_specs()
+
+    # Mutate discrete connection indices.
     for i in range(individual.shape[0]):
-        if random.random() < GAConfig.FLIP_PROB/2:
-            individual[i][0] = np.random.randint(-1, GAConfig.N_SITES_ARM)
-        elif random.random() < GAConfig.FLIP_PROB:
-            individual[i][1] = np.random.randint(-1, GAConfig.N_SITES_OBJECT if i < GAConfig.TENDON_NUM * 2 else GAConfig.N_SITES_ARM)
-    
-        individual[i][2] += random.gauss(GAConfig.GAUSSIAN_MU, GAConfig.GAUSSIAN_SIGMA)
-        individual[i][2] = max(GAConfig.MIN_STIFFNESS, min(GAConfig.MAX_STIFFNESS, individual[i][2]))
-    
-        individual[i][3] += random.gauss(GAConfig.GAUSSIAN_MU, GAConfig.GAUSSIAN_SIGMA / 10.0)
-        individual[i][3] = max(GAConfig.MIN_DAMPING, min(GAConfig.MAX_DAMPING, individual[i][3]))
+        if i >= len(gene_specs):
+            break
+        spec = gene_specs[i]
+        src_count = family_site_count(str(spec["src"]))
+        dst_count = family_site_count(str(spec["dst"]))
+
+        # Mutate source index.
+        if random.random() < GAConfig.FLIP_PROB:
+            if random.random() < 0.7:  # Creep mutation (local search)
+                step = random.choice([-3, -2, -1, 1, 2, 3])
+                new_val = int(individual[i][0]) + step
+                individual[i][0] = max(-1, min(src_count - 1, new_val))
+            else:  # Random resampling (exploration)
+                individual[i][0] = np.random.randint(-1, src_count)
+
+        # Mutate destination index.
+        if random.random() < GAConfig.FLIP_PROB:
+            if random.random() < 0.7:  # Creep mutation
+                step = random.choice([-3, -2, -1, 1, 2, 3])
+                new_val = int(individual[i][1]) + step
+                individual[i][1] = max(-1, min(dst_count - 1, new_val))
+            else:  # Random resampling
+                individual[i][1] = np.random.randint(-1, dst_count)
+
+    # Mutate continuous parameters (stiffness, damping, length) with polynomial bounded mutation.
+    continuous_params = individual[:, 2:5].flatten()
+
+    low_bounds = []
+    up_bounds = []
+    for _ in range(individual.shape[0]):
+        low_bounds.extend([GAConfig.MIN_STIFFNESS, GAConfig.MIN_DAMPING, GAConfig.MIN_SPRING_LENGTH])
+        up_bounds.extend([GAConfig.MAX_STIFFNESS, GAConfig.MAX_DAMPING, GAConfig.MAX_SPRING_LENGTH])
+
+    mutated_params, = tools.mutPolynomialBounded(
+        continuous_params,
+        eta=20.0,
+        low=low_bounds,
+        up=up_bounds,
+        indpb=0.3,
+    )
+
+    individual[:, 2:5] = np.array(mutated_params).reshape(-1, 3)
     
     return (individual,)
 
 
 def crossover_individuals(ind1: creator.Individual, ind2: creator.Individual) -> Tuple[creator.Individual, creator.Individual]:
     """
-    Crossover two individuals using uniform crossover.
+    Crossover two individuals using:
+    - Two-point crossover for discrete connection indices
+    - Simulated Binary Crossover (SBX) for continuous parameters
     """
-    # Uniform crossover for adjacency
-    for i in range(ind1.shape[0]):
-        if random.random() < 0.5:
-            ind1[i], ind2[i] = ind2[i], ind1[i]
-        if random.random() < 0.25:
-            ind1[i][2], ind2[i][2] = (ind2[i][2] + ind1[i][2]) / 2.0, (ind2[i][2] + ind1[i][2]) / 2.0
-        if random.random() < 0.25:
-            ind1[i][3], ind2[i][3] = (ind2[i][3] + ind1[i][3]) / 2.0, (ind2[i][3] + ind1[i][3]) / 2.0
-    
+    num_tendons = ind1.shape[0]
+
+    # Two-point crossover for discrete columns (0 and 1).
+    if num_tendons > 2:
+        point1 = random.randint(1, num_tendons - 1)
+        point2 = random.randint(1, num_tendons - 1)
+        if point1 > point2:
+            point1, point2 = point2, point1
+
+        for col in [0, 1]:
+            seg1 = ind1[point1:point2, col].copy()
+            seg2 = ind2[point1:point2, col].copy()
+            ind1[point1:point2, col] = seg2
+            ind2[point1:point2, col] = seg1
+    else:
+        point = random.randint(1, num_tendons)
+        for col in [0, 1]:
+            seg1 = ind1[point:, col].copy()
+            seg2 = ind2[point:, col].copy()
+            ind1[point:, col] = seg2
+            ind2[point:, col] = seg1
+
+    # SBX for continuous columns (2, 3, 4).
+    continuous_params1 = ind1[:, 2:5].flatten()
+    continuous_params2 = ind2[:, 2:5].flatten()
+
+    low_bounds = []
+    up_bounds = []
+    for _ in range(ind1.shape[0]):
+        low_bounds.extend([GAConfig.MIN_STIFFNESS, GAConfig.MIN_DAMPING, GAConfig.MIN_SPRING_LENGTH])
+        up_bounds.extend([GAConfig.MAX_STIFFNESS, GAConfig.MAX_DAMPING, GAConfig.MAX_SPRING_LENGTH])
+
+    tools.cxSimulatedBinaryBounded(
+        continuous_params1,
+        continuous_params2,
+        eta=20.0,
+        low=low_bounds,
+        up=up_bounds,
+    )
+
+    ind1[:, 2:5] = np.array(continuous_params1).reshape(-1, 3)
+    ind2[:, 2:5] = np.array(continuous_params2).reshape(-1, 3)
     
     return ind1, ind2
-
 
 # ============================================================================
 # Helper Functions for DEAP
@@ -938,18 +1228,34 @@ def run_evolution(visualize: bool = False, resume: str = None, plot_stats: bool 
     log(f"  Sites per Object:     {GAConfig.N_SITES_OBJECT} ({GAConfig.N_SITES_OBJECT_X}x{GAConfig.N_SITES_OBJECT_Y}x{GAConfig.N_SITES_OBJECT_Z})")
     log(f"  Stiffness Range:      {GAConfig.MIN_STIFFNESS} - {GAConfig.MAX_STIFFNESS} N/m")
     log(f"  Damping Range:        {GAConfig.MIN_DAMPING} - {GAConfig.MAX_DAMPING} N*s/m")
+    log("  Connection Groups:")
+    for group in GAConfig.CONNECTION_GROUPS:
+        log(
+            f"    - {group['name']}: {group['src']} -> {group['dst']}, "
+            f"count={group['num_tendons']}, spring_mode={group.get('spring_mode', 'range')}"
+        )
     log("")
     log(f"  Simulation Duration:  {GAConfig.SIM_DURATION} s")
     log(f"  Simulation Timestep:  {GAConfig.SIM_DT} s")
+    log(f"  Target X Trials:      {[GAConfig.TARGET_BASE_X + dx for dx in GAConfig.TARGET_TRIAL_X_OFFSETS]}")
+    log(f"  Target Yaw Trials:    {list(GAConfig.TARGET_TRIAL_YAWS)}")
+    log(f"  Target Step Jitter X: ±{GAConfig.TARGET_STEP_JITTER_X} m")
+    log(f"  Target Step Jitter Y: ±{GAConfig.TARGET_STEP_JITTER_Y} m")
+    log(f"  Target Step Yaw Jitter: ±{GAConfig.TARGET_STEP_YAW_JITTER:.6f} rad")
+    log(f"  Arm Start Trials:     {len(GAConfig.ARM_TRIAL_PERTURBATIONS)}")
     log(f"  Lift Delay:           {GAConfig.LIFT_DELAY} s")
     log(f"  Lift Duration:        {GAConfig.LIFT_DURATION} s")
     log(f"  Lift Force:           {GAConfig.LIFT_FORCE} N/m")
-    log(f"  Velocity Delay:       {GAConfig.VELOCITY_DELAY} s "
-        f"({int(round(GAConfig.VELOCITY_DELAY / GAConfig.SIM_DT))} sim steps)")
+    _vd_steps = int(round(GAConfig.VELOCITY_DELAY / GAConfig.SIM_DT)) if GAConfig.SIM_DT > 0 else 0
+    log(f"  Velocity Delay:       {GAConfig.VELOCITY_DELAY} s ({_vd_steps} sim steps)")
     log("")
     log(f"  Contact Weight:       {GAConfig.CONTACT_WEIGHT}")
     log(f"  Height Weight:        {GAConfig.HEIGHT_WEIGHT}")
     log(f"  Centre Weight:        {GAConfig.CENTRE_WEIGHT}")
+    log(f"  Force Penalty Weight: {GAConfig.FORCE_PENALTY_WEIGHT}")
+    log(f"  Control Effort:       {GAConfig.CONTROL_EFFORT_WEIGHT}")
+    log(f"  Control Smoothness:   {GAConfig.CONTROL_SMOOTHNESS_WEIGHT}")
+    log(f"  Robustness Weight:    {GAConfig.ROBUSTNESS_WEIGHT}")
     log(f"  Stability Weight:     {GAConfig.STABILITY_WEIGHT}")
     log(f"  Efficiency Weight:    {GAConfig.EFFICIENCY_WEIGHT}")
     log("")
@@ -1100,6 +1406,22 @@ def run_evolution(visualize: bool = False, resume: str = None, plot_stats: bool 
     
     # Copy checkpoint to run directory
     shutil.copy(final_path, os.path.join(run_dir, "best_individual.pkl"))
+
+    # Export best model as XML + tendon metadata JSON for external tools.
+    export_sim = None
+    export_builder = None
+    try:
+        export_sim, export_builder = build_model_from_genome(G.copy(), angle=0.0, return_builder=True)
+        model_xml_path, tendon_json_path = export_model_and_tendon_json(export_sim, run_dir, builder=export_builder)
+        log(f"Best model XML saved: {model_xml_path}")
+        log(f"Tendon metadata JSON saved: {tendon_json_path}")
+    except Exception as e:
+        log(f"Warning: Failed to export best model XML/JSON: {e}")
+    finally:
+        if export_sim is not None:
+            export_sim.close()
+        if export_builder is not None:
+            del export_builder
     
     # Generate and save statistics plot
     stats_plot_path = os.path.join(run_dir, "evolution_statistics.png")
@@ -1115,7 +1437,7 @@ def run_evolution(visualize: bool = False, resume: str = None, plot_stats: bool 
             passive=True,
             viewer_distance=5,
             viewer_lookat=[0, 0, 0.25],
-            realtime_speed=1,
+            realtime_speed=0.01,
             duration=GAConfig.SIM_DURATION,
             control_preset=True,
             record_video=True
@@ -1161,6 +1483,15 @@ def run_evolution(visualize: bool = False, resume: str = None, plot_stats: bool 
         'max_damping': GAConfig.MAX_DAMPING,
         'sim_duration': GAConfig.SIM_DURATION,
         'sim_dt': GAConfig.SIM_DT,
+        'target_base_x': GAConfig.TARGET_BASE_X,
+        'target_base_y': GAConfig.TARGET_BASE_Y,
+        'target_base_z': GAConfig.TARGET_BASE_Z,
+        'target_trial_x_offsets': list(GAConfig.TARGET_TRIAL_X_OFFSETS),
+        'target_trial_yaws': list(GAConfig.TARGET_TRIAL_YAWS),
+        'target_step_jitter_x': GAConfig.TARGET_STEP_JITTER_X,
+        'target_step_jitter_y': GAConfig.TARGET_STEP_JITTER_Y,
+        'target_step_yaw_jitter': GAConfig.TARGET_STEP_YAW_JITTER,
+        'arm_trial_perturbations': list(GAConfig.ARM_TRIAL_PERTURBATIONS),
         'lift_delay': GAConfig.LIFT_DELAY,
         'lift_duration': GAConfig.LIFT_DURATION,
         'lift_force': GAConfig.LIFT_FORCE,
@@ -1168,6 +1499,10 @@ def run_evolution(visualize: bool = False, resume: str = None, plot_stats: bool 
         'contact_weight': GAConfig.CONTACT_WEIGHT,
         'height_weight': GAConfig.HEIGHT_WEIGHT,
         'centre_weight': GAConfig.CENTRE_WEIGHT,
+        'force_penalty_weight': GAConfig.FORCE_PENALTY_WEIGHT,
+        'control_effort_weight': GAConfig.CONTROL_EFFORT_WEIGHT,
+        'control_smoothness_weight': GAConfig.CONTROL_SMOOTHNESS_WEIGHT,
+        'robustness_weight': GAConfig.ROBUSTNESS_WEIGHT,
         'stability_weight': GAConfig.STABILITY_WEIGHT,
         'efficiency_weight': GAConfig.EFFICIENCY_WEIGHT,
         'best_fitness': float(best_fitness),
@@ -1195,6 +1530,8 @@ def run_evolution(visualize: bool = False, resume: str = None, plot_stats: bool 
         f.write(f"## Files in This Directory\n\n")
         f.write(f"- `training_log.txt` - Complete training log with all console output\n")
         f.write(f"- `best_individual.pkl` - Saved best individual (can be loaded with --load)\n")
+        f.write(f"- `best_model.xml` - Exported MuJoCo model of best individual\n")
+        f.write(f"- `best_model_tendons.json` - Tendon name/stiffness/damping/length for interoperability\n")
         f.write(f"- `evolution_statistics.png` - Fitness evolution plots\n")
         f.write(f"- `best_individual.mp4` - Video of best individual performing task\n")
         f.write(f"- `configuration.json` - All configuration parameters in JSON format\n")
@@ -1219,6 +1556,10 @@ def run_evolution(visualize: bool = False, resume: str = None, plot_stats: bool 
         f.write(f"- Contact: {GAConfig.CONTACT_WEIGHT}\n")
         f.write(f"- Height: {GAConfig.HEIGHT_WEIGHT}\n")
         f.write(f"- Centre: {GAConfig.CENTRE_WEIGHT}\n")
+        f.write(f"- Force Penalty: {GAConfig.FORCE_PENALTY_WEIGHT}\n")
+        f.write(f"- Control Effort: {GAConfig.CONTROL_EFFORT_WEIGHT}\n")
+        f.write(f"- Control Smoothness: {GAConfig.CONTROL_SMOOTHNESS_WEIGHT}\n")
+        f.write(f"- Robustness: {GAConfig.ROBUSTNESS_WEIGHT}\n")
         f.write(f"- Stability: {GAConfig.STABILITY_WEIGHT}\n")
         f.write(f"- Efficiency: {GAConfig.EFFICIENCY_WEIGHT}\n\n")
         
@@ -1277,7 +1618,7 @@ def run_evolution(visualize: bool = False, resume: str = None, plot_stats: bool 
             passive=True,
             viewer_distance=5,
             viewer_lookat=[0, 0, 0.25],
-            realtime_speed=0.5,
+            realtime_speed=1,
             duration=GAConfig.SIM_DURATION,
             control_preset=True
         )
@@ -1294,6 +1635,8 @@ if __name__ == "__main__":
     parser.add_argument('--visualize', action='store_true', help='Visualize best individual after evolution')
     parser.add_argument('--resume', type=str, help='Resume from checkpoint file')
     parser.add_argument('--load', type=str, help='Load and visualize a saved individual')
+    parser.add_argument('--export-pkl', type=str, help='Load a saved individual/checkpoint pickle and export XML + tendon JSON')
+    parser.add_argument('--export-dir', type=str, default=None, help='Output directory for --export-pkl (default: same directory as pickle)')
     parser.add_argument('--record', action='store_true', help='Record simulation video when visualizing')
     parser.add_argument('--stats', action='store_true', help='Generate and save statistics plots')
     parser.add_argument('--parallel', type=int, default=None, metavar='N',
@@ -1301,7 +1644,39 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    if args.load:
+    if args.export_pkl:
+        print(f"Loading individual for export from: {args.export_pkl}")
+        with open(args.export_pkl, 'rb') as f:
+            result = pickle.load(f)
+
+        if 'individual' in result:
+            individual = result['individual']
+            if 'fitness' in result:
+                print(f"Fitness: {result['fitness']:.4f}")
+        elif 'halloffame' in result and len(result['halloffame']) > 0:
+            individual = result['halloffame'][0]
+            print("Loaded best individual from Hall of Fame")
+        else:
+            raise ValueError("Unsupported pickle format: expected keys 'individual' or non-empty 'halloffame'")
+
+        G = decode_genome(individual)
+        out_dir = args.export_dir if args.export_dir else os.path.dirname(os.path.abspath(args.export_pkl))
+        os.makedirs(out_dir, exist_ok=True)
+
+        export_sim = None
+        export_builder = None
+        try:
+            export_sim, export_builder = build_model_from_genome(G.copy(), angle=0.0, return_builder=True)
+            xml_path, json_path = export_model_and_tendon_json(export_sim, out_dir, builder=export_builder)
+            print(f"Exported model XML: {xml_path}")
+            print(f"Exported tendon JSON: {json_path}")
+        finally:
+            if export_sim is not None:
+                export_sim.close()
+            if export_builder is not None:
+                del export_builder
+
+    elif args.load:
         # Load and visualize saved individual
         print(f"Loading individual from: {args.load}")
         with open(args.load, 'rb') as f:

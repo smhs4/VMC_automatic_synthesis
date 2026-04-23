@@ -29,7 +29,7 @@ import networkx
 import mujoco
 import pickle
 from datetime import datetime
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Callable
 import math
 import random
 import argparse
@@ -463,6 +463,102 @@ class TendonTorqueController:
                 hi = float(self.model.actuator_ctrlrange[act_id, 1])
                 ctrl = float(np.clip(ctrl, lo, hi))
             self.data.ctrl[act_id] = ctrl
+
+
+# ============================================================================
+# Joint Trace Recorder
+# ============================================================================
+class JointTraceRecorder:
+    """Sample qpos/qvel/qfrc_actuator for named joints on every control tick.
+
+    The recorder wraps an existing control callback so the underlying controller
+    still runs first; we sample *after* it returns so that ``data.ctrl`` already
+    reflects the command for this step. ``qfrc_actuator`` is populated by MuJoCo
+    during ``mj_fwdActuation`` (after ``mjcb_control``), so it lags the control
+    command by one step — fine for plotting.
+    """
+
+    def __init__(self, sim: MuJoCoSimulation, joint_names: List[str]):
+        self.sim = sim
+        self.model = sim.model
+        self.data = sim.data
+
+        # Resolve each joint to its qpos and qvel addresses. Only joints that
+        # actually exist in the model are recorded.
+        self.joint_names: List[str] = []
+        self.qpos_adr: List[int] = []
+        self.qvel_adr: List[int] = []
+        for name in joint_names:
+            jid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, name)
+            if jid < 0:
+                continue
+            self.joint_names.append(name)
+            self.qpos_adr.append(int(self.model.jnt_qposadr[jid]))
+            self.qvel_adr.append(int(self.model.jnt_dofadr[jid]))
+
+        self.times: List[float] = []
+        self.qpos: List[np.ndarray] = []
+        self.qvel: List[np.ndarray] = []
+        self.torque: List[np.ndarray] = []
+
+    def wrap_callback(self, inner: Callable[[MuJoCoSimulation], None]):
+        """Return a callback that runs ``inner`` then records one sample."""
+        qpos_adr = np.asarray(self.qpos_adr, dtype=np.int64)
+        qvel_adr = np.asarray(self.qvel_adr, dtype=np.int64)
+
+        def wrapped(sim: MuJoCoSimulation):
+            inner(sim)
+            self.times.append(float(sim.data.time))
+            self.qpos.append(np.asarray(sim.data.qpos[qpos_adr], dtype=np.float64).copy())
+            self.qvel.append(np.asarray(sim.data.qvel[qvel_adr], dtype=np.float64).copy())
+            self.torque.append(np.asarray(sim.data.qfrc_actuator[qvel_adr], dtype=np.float64).copy())
+
+        return wrapped
+
+    def save(self, out_dir: str, prefix: str = "joint_trace"):
+        """Write CSV and a figure with (pos, vel, torque) rows per joint."""
+        os.makedirs(out_dir, exist_ok=True)
+        if not self.times:
+            print("JointTraceRecorder: no samples recorded, nothing to save.")
+            return
+
+        times = np.asarray(self.times)
+        qpos = np.vstack(self.qpos)   # (T, J)
+        qvel = np.vstack(self.qvel)
+        torque = np.vstack(self.torque)
+
+        # CSV with every sample.
+        csv_path = os.path.join(out_dir, f"{prefix}.csv")
+        header = ["time"]
+        for jn in self.joint_names:
+            header += [f"{jn}_pos", f"{jn}_vel", f"{jn}_torque"]
+        rows = np.column_stack([times,
+                                 np.hstack([np.column_stack([qpos[:, i], qvel[:, i], torque[:, i]])
+                                            for i in range(len(self.joint_names))])])
+        np.savetxt(csv_path, rows, delimiter=",", header=",".join(header), comments="")
+        print(f"Joint trace CSV saved: {csv_path}")
+
+        # One tall figure: rows=joints, cols=(pos, vel, torque). Shared x axis.
+        n = len(self.joint_names)
+        fig, axes = plt.subplots(n, 3, figsize=(12, max(2.0, 1.6 * n)), sharex=True, squeeze=False)
+        for row, name in enumerate(self.joint_names):
+            axes[row, 0].plot(times, qpos[:, row], color="tab:blue")
+            axes[row, 1].plot(times, qvel[:, row], color="tab:green")
+            axes[row, 2].plot(times, torque[:, row], color="tab:red")
+            axes[row, 0].set_ylabel(name, rotation=0, ha="right", va="center", fontsize=8)
+            for col in range(3):
+                axes[row, col].grid(True, alpha=0.3)
+        axes[0, 0].set_title("position (rad)")
+        axes[0, 1].set_title("velocity (rad/s)")
+        axes[0, 2].set_title("actuator torque (Nm)")
+        for col in range(3):
+            axes[-1, col].set_xlabel("time (s)")
+        fig.suptitle("Per-joint traces during rollout", y=1.0)
+        fig.tight_layout()
+        fig_path = os.path.join(out_dir, f"{prefix}.png")
+        fig.savefig(fig_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+        print(f"Joint trace figure saved: {fig_path}")
 
 
 # ============================================================================
@@ -1641,7 +1737,11 @@ if __name__ == "__main__":
     parser.add_argument('--stats', action='store_true', help='Generate and save statistics plots')
     parser.add_argument('--parallel', type=int, default=None, metavar='N',
                         help='Number of parallel processes (default: all cores, 1=serial)')
-    
+    parser.add_argument('--plot-joints', action='store_true',
+                        help='When visualizing with --load, record per-step position, '
+                             'velocity, and actuator torque for each arm joint and save '
+                             'CSV + figure alongside the loaded pickle.')
+
     args = parser.parse_args()
     
     if args.export_pkl:
@@ -1701,6 +1801,27 @@ if __name__ == "__main__":
         print(f"Number of tendons: {num_tendons}")
 
         sim = build_model_from_genome(G)
+
+        joint_recorder: Optional[JointTraceRecorder] = None
+        if args.plot_joints:
+            # Reuse the arm/waist joint list from build_model_from_genome so the
+            # trace matches what the controller is actually driving.
+            recorded_joint_names = [
+                "waist_yaw_joint", "neck_yaw_joint", "neck_pitch_joint",
+                "r_arm_joint1", "r_arm_joint2", "r_arm_joint3", "r_arm_joint4",
+                "r_arm_joint5", "r_arm_joint6", "r_arm_joint7", "r_hand_mimic_joint",
+                "l_arm_joint1", "l_arm_joint2", "l_arm_joint3", "l_arm_joint4",
+                "l_arm_joint5", "l_arm_joint6", "l_arm_joint7", "l_hand_mimic_joint",
+            ]
+            joint_recorder = JointTraceRecorder(sim, recorded_joint_names)
+            # Wrap the existing control callback so the TendonTorqueController
+            # still runs first, then we snapshot the joint state.
+            inner_cb = sim._control_callback
+            sim.set_control_callback(
+                joint_recorder.wrap_callback(inner_cb),
+                gravity_comp=sim._gravity_comp,
+            )
+
         sim.run(
             passive=True,
             viewer_distance=5,
@@ -1710,6 +1831,11 @@ if __name__ == "__main__":
             control_preset=True,
             record_video=args.record
             )
+
+        if joint_recorder is not None:
+            out_dir = os.path.dirname(os.path.abspath(args.load)) or "."
+            prefix = f"joint_trace_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            joint_recorder.save(out_dir, prefix=prefix)
     else:
         # Run evolution
         run_evolution(visualize=args.visualize, resume=args.resume, 

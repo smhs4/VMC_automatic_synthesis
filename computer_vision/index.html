@@ -1,0 +1,116 @@
+
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SVG One-Page Print</title>
+
+  <style>
+    /* ONE PAGE */
+    @page { size: A4; margin: 6mm; }  /* reduce margin to fit more */
+    html, body { margin: 0; padding: 0; background: #fff; }
+
+    /* Printable area container */
+    .page {
+      width: 210mm;
+      height: 297mm;
+      padding: 6mm;
+      box-sizing: border-box;
+      overflow: hidden; /* ensures it stays one page */
+    }
+
+    /* Grid that fills the whole page area */
+    .grid {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      gap: 2mm;                 /* tighter = fit more */
+      align-items: center;
+      justify-items: center;
+    }
+
+    /* Each SVG cell */
+    .cell {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      /* optional light border for cutting */
+      /* border: 0.2mm solid #ddd; */
+      box-sizing: border-box;
+    }
+
+    /* Make SVG scale to fit cell */
+    .cell img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      display: block;
+    }
+
+    @media screen {
+      /* nice preview on screen */
+      body { display: flex; justify-content: center; }
+      .page { outline: 1px solid #eee; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div id="grid" class="grid"></div>
+  </div>
+
+  <script>
+    // Put your SVG filenames here (must be in same folder or use relative paths)
+    const svgs = [
+      "4x4_1000-1.svg",
+      "4x4_1000-2.svg",
+      "4x4_1000-3.svg",
+      "4x4_1000-4.svg",
+      "4x4_1000-5.svg",
+      "4x4_1000-6.svg",
+      "4x4_1000-7.svg",
+      "4x4_1000-8.svg",
+      "4x4_1000-9.svg",
+      "4x4_1000-10.svg",
+    ];
+
+    const grid = document.getElementById("grid");
+
+    function setBestGrid(n) {
+      // Choose columns/rows close to a square to use space efficiently
+      const cols = Math.ceil(Math.sqrt(n));
+      const rows = Math.ceil(n / cols);
+
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+    }
+
+    if (svgs.length === 0) {
+      grid.innerHTML = `<div style="font-family:system-ui; font-size:14px;">
+        Add your SVG filenames into the <code>svgs</code> array in index.html.
+      </div>`;
+    } else {
+      setBestGrid(svgs.length);
+
+      svgs.forEach(src => {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = src;
+
+        cell.appendChild(img);
+        grid.appendChild(cell);
+      });
+    }
+  </script>
+</body>
+</html>

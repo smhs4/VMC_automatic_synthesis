@@ -1,0 +1,167 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{cite}
+
+\title{VMC Automatic Synthesis: Genetic Algorithm for Tendon-Driven Robotic Manipulation}
+% titles should be different
+
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+
+\section*{1. Introduction}
+\begin{itemize}
+  \item Background and motivation
+  \begin{itemize}
+    \item Robot manipulation challenges
+    \item Virtual model control
+    \item motivation for automatic synthesis 
+  \end{itemize}
+  \item Problem statement
+  \begin{itemize}
+    \item Project aims
+    \item Research questions 
+    % can we do it
+    % what is the sim to real gap
+    % what is the sensitivity 
+    \item Scope and limitations
+  \end{itemize}
+\end{itemize}
+
+\section*{2. Literature Review}
+\begin{itemize} 
+
+    % start with what is used to solve the problem
+    % design by hand vs ...
+    % why using genetic algorithms
+    % novelty of how people have addressed this. (designing a mechanism vs trajectory)
+  \item Virtual model control principles and applications.
+  \item Virtual model control design and optimization methods.
+  \item robotic manipulation and grasping strategies.
+  \item Genetic algorithms and other optimization techniques in robotics.
+  \item simulation-to-real transfer and digital twin.
+  \item gap analysis and motivation for our approach.
+\end{itemize}
+
+\section*{3. System and Infrastructure Overview}
+% motivate why we are providing this information (chapter vs appendix)
+\begin{itemize}
+  \item Hardware setup and control (Sciurus17)
+  \item VMC architecture and control flow.
+  \item Simulation environment.
+    \begin{itemize}
+        \item MuJoCo physics engine.
+        \item model construction and simulation tooling (`ModelBuilder`).
+        \item contact Modeling (friction, solver, soft materials).
+        \item tendon modeling, Jacobian mapping, and controller callbacks.
+        \item validation and visualization tools.
+    \end{itemize}
+  \item Object tracking (Aruco). 
+  
+\end{itemize}
+
+\section*{4. Automatic Synthesis Methodology}
+\begin{itemize}
+    \item Problem Formulation
+    \item Parameterization of tendon configurations and controllers. (Constrining the search space)
+    \item Objective function design and scenario randomization.
+    \item Optimization method (Genetic Algorithm).
+    \begin{itemize}
+        \item GA setup (population, selection, elitism, crossover, mutation).
+        \item Enconding of tendon configurations
+        \item Improved operators (bounded continuous mutation/crossover, integer creep).
+        \item Parallel evaluation and runtime considerations.
+    \end{itemize}
+    \item runtime considerations and parallel evaluation.
+    % this is not essential \item Implementation details Checkpointing, reproducibility, and export artifacts (XML/JSON).
+\end{itemize}
+
+
+\section*{5. Real Robot Experiments}
+\begin{itemize}
+  \item Initial conditions and scenario
+  \item Evaluation metrics and data collection (digital twin, video)
+  \item adjustments for sim-to-real transfer (contact calibration, controller scaling, jitter, ramp).
+  \item signal processing for controller feedback. (smoothing, delay, noise handling).
+\end{itemize}
+
+\section*{6. Results} % Don't separate results and discusstion
+\begin{itemize}
+  \item Simulation Results
+  \begin{itemize}
+    \item baseline performance (hand-designed configurations).
+    \item optimization progress (fitness curves, diversity).
+    \item best configurations and their performance.
+  \end{itemize}
+%   this should go into implementation deails
+  \item Real Robot contoller and object tracking Results
+  \item Simulation to real transfer results
+  \begin{itemize}
+    \item performance of best configurations on real robot.
+    \item comparison to simulation results.
+    \item qualitative observations (stability, adaptability) and unstable phenomena.
+    \item visualization of successful grasps and failure modes.
+  \end{itemize}
+\end{itemize}
+
+% third section in results which is results after real input.
+
+\section*{7. Discussion}
+\begin{itemize}
+  \item Analysis of search space and optimization landscape. (fitness function)
+  \item GA algorithm performance and convergency analysis.
+  \begin{itemize}
+    \item effectiveness of GA operators and hyperparameter choices.
+    \item genome encoding and its impact on search efficiency.
+    \item potential improvements (adaptive mutation, multi-objective optimization).
+  \end{itemize}
+  \item Analysis of discrepancies between simulation and real-world performance and how to address them.
+  \begin{itemize}
+    \item Importance of accurate contact modeling and calibration.
+    \item joint friction and damping effects
+    \item controller power scaling
+    \item effect of multi-tendon and high damping configurations and instability.
+    \item sensitivity to initial conditions and robustness of controllers.
+  \end{itemize}
+  \item Generalization and robustness of synthesized controllers.
+\end{itemize}
+
+\section*{10. Conclusion}
+\begin{itemize}
+  \item Summary of technical contributions.
+  \item Practical impact and lessons learned. (in discussion section)
+\end{itemize}
+
+% future work should be more related to the results rather than just doing more. give a starting point for future work rahther than just trying new stuff.
+\section*{11. Future Work}
+\begin{itemize}
+  \item Multi-objective optimization and Pareto analysis.
+  \item Incorporation other optimization techniques (Bayesian optimization, reinforcement learning).
+  \item wider search space (moving sites, rotational tendons, etc).
+  \item Better contact modeling or use of soft materials in simulation.
+  \item making a more robust controller software stack (closed loop control, better signal processing, etc) more stable with higher damping.
+  \item Extending to richer grasp tasks.
+\end{itemize}
+
+
+
+\end{document}
+
+
+% looked at the problem in two regimes: 
+% sticky and non-sticky (more normal) contact.
+% maybe can run the stickey situation
+
+% normalisation of the damping
+% have discussion on sampling time
+% maybe apply sampling delay to the simulation
+
+

@@ -1,0 +1,122 @@
+[
+  {
+    "name": "left_lifter",
+    "cosntant": 400.0,
+    "damping": 5.0,
+    "rest_length": 0.1
+  },
+  {
+    "name": "right_lifter",
+    "cosntant": 400.0,
+    "damping": 5.0,
+    "rest_length": 0.1
+  },
+  {
+    "name": "tendon_left_chopstick_site_2_1_3_target_site_1_1_2",
+    "cosntant": 11.341052742274444,
+    "damping": 4.537231721901699,
+    "rest_length": 0.00029397296886031564
+  },
+  {
+    "name": "tendon_left_chopstick_site_1_0_1_target_site_2_0_1",
+    "cosntant": 20.0,
+    "damping": 2.6065499651764257,
+    "rest_length": 0.0019774521045705755
+  },
+  {
+    "name": "tendon_target_site_2_0_1_right_chopstick_site_2_1_1",
+    "cosntant": 16.200354412192496,
+    "damping": 1.0,
+    "rest_length": 0.002265693794007127
+  },
+  {
+    "name": "tendon_left_chopstick_site_2_2_2_target_site_1_0_0",
+    "cosntant": 16.391365674844568,
+    "damping": 1.2344863600453047,
+    "rest_length": 0.005037197184944284
+  },
+  {
+    "name": "tendon_left_chopstick_site_0_1_3_target_site_0_2_2",
+    "cosntant": 16.79147868074955,
+    "damping": 2.86790190704498,
+    "rest_length": 0.005608140890687229
+  },
+  {
+    "name": "tendon_left_chopstick_site_0_1_3_right_chopstick_site_0_0_3",
+    "cosntant": 0.0,
+    "damping": 3.794391477219955,
+    "rest_length": 0.010799315177347548
+  },
+  {
+    "name": "tendon_right_chopstick_site_1_1_0_target_site_0_1_0",
+    "cosntant": 20.0,
+    "damping": 1.6527780329194024,
+    "rest_length": 0.003981343810918117
+  },
+  {
+    "name": "tendon_right_chopstick_site_0_1_1_target_site_2_0_2",
+    "cosntant": 20.0,
+    "damping": 2.033489831200285,
+    "rest_length": 0.011001003580506616
+  },
+  {
+    "name": "tendon_right_chopstick_site_0_1_1_left_chopstick_site_2_1_0",
+    "cosntant": 12.872694232814656,
+    "damping": 3.500289544541967,
+    "rest_length": 0.01309906737543529
+  },
+  {
+    "name": "tendon_right_chopstick_site_1_1_1_target_site_2_1_1",
+    "cosntant": 18.806717489103406,
+    "damping": 1.170313083956001,
+    "rest_length": 0.005085903021486578
+  },
+  {
+    "name": "tendon_right_chopstick_site_0_0_0_left_chopstick_site_2_1_1",
+    "cosntant": 1.1995085433033625,
+    "damping": 2.688057004575385,
+    "rest_length": 0.007577224095255428
+  },
+  {
+    "name": "tendon_right_chopstick_site_0_2_3_left_chopstick_site_2_2_3",
+    "cosntant": 12.775330581684852,
+    "damping": 2.8557888740568194,
+    "rest_length": 0.03010422594813857
+  },
+  {
+    "name": "tendon_r_link5_site_1_1_0_l_link5_site_0_0_0",
+    "cosntant": 18.87195146348712,
+    "damping": 2.706076966192156,
+    "rest_length": 0.01046286018998063
+  },
+  {
+    "name": "tendon_r_link5_site_0_0_0_l_link5_site_1_0_0",
+    "cosntant": 12.324946441230438,
+    "damping": 4.732706647366623,
+    "rest_length": 0.007361894715230597
+  },
+  {
+    "name": "tendon_l_link4_site_0_0_1_body_link_site_1_1_1",
+    "cosntant": 8.122347036341324,
+    "damping": 1.0,
+    "rest_length": 0.009342776738388762
+  },
+  {
+    "name": "tendon_body_link_site_1_1_1_r_link4_site_0_0_0",
+    "cosntant": 13.38735269411805,
+    "damping": 3.176749853840969,
+    "rest_length": 0.0001488910096913753
+  },
+  {
+    "name": "tendon_l_link4_site_1_0_1_body_link_site_1_0_1",
+    "cosntant": 0.0,
+    "damping": 2.91764251526506,
+    "rest_length": 0.011821689194474015
+  },
+  {
+    "name": "tendon_body_link_site_1_0_1_r_link4_site_0_0_1",
+    "cosntant": 20.0,
+    "damping": 2.9432206626328297,
+    "rest_length": 0.021587256330455436
+  }
+]

@@ -791,6 +791,7 @@ class ModelBuilder:
                  geom_rgba: List[float] = [0.5, 0.5, 0.8, 1],
                  geom_mesh: Optional[str] = None,
                  geom_material: Optional[str] = None,
+                 geom_priority: Optional[int] = None,
                  free_joint: bool = True,
                  parent: Optional[str] = None,
                  intersection: bool = True,
@@ -809,6 +810,7 @@ class ModelBuilder:
             geom_rgba: Color [r, g, b, a]
             geom_mesh: Mesh name (required when geom_type="mesh", must call add_mesh first)
             geom_material: Material name (optional, must call add_material first)
+            geom_priority: MuJoCo geom contact priority (higher value wins during contact filtering)
             free_joint: Add a free joint (6 DOF)
             parent: Parent body name (None = world)
             intersection: Whether geom has collision detection enabled
@@ -849,6 +851,10 @@ class ModelBuilder:
                 joint.type = mujoco.mjtJoint.mjJNT_SLIDE
                 joint.axis = axis
                 joint.name = f"{name}_joint_{axis[0]}{axis[1]}{axis[2]}"
+                # Avoid invalid default range issues when XML defaults have joint limits.
+                # Programmatic helper slide joints are intended unconstrained unless caller
+                # sets explicit limits later.
+                joint.limited = False
 
         # Add geom
         geom = body.add_geom()
@@ -873,6 +879,9 @@ class ModelBuilder:
         # Set material if specified
         if geom_material is not None:
             geom.material = geom_material
+
+        if geom_priority is not None:
+            geom.priority = int(geom_priority)
         
         geom.rgba = geom_rgba
         
@@ -1218,7 +1227,7 @@ class ModelBuilder:
 
         return self
     
-    def compile(self) -> mujoco.MjModel:
+    def compile(self, keep_spec: bool = False) -> mujoco.MjModel:
         """
         Compile the spec into a model.
         
@@ -1230,8 +1239,10 @@ class ModelBuilder:
         # print(self.spec)
         model = self.spec.compile()
         
-        # Clear the spec after compilation to prevent reuse
-        del self.spec
+        # Clear the spec after compilation to prevent reuse unless caller
+        # explicitly needs it (e.g., for XML export).
+        if not keep_spec:
+            del self.spec
         
         return model
     
@@ -1274,6 +1285,9 @@ class MuJoCoSimulation:
             raise ValueError("Must provide either xml_path or xml_string")
         
         self.data = mujoco.MjData(self.model)
+        # Always initialize to model defaults (qpos0, etc.) explicitly.
+        mujoco.mj_resetData(self.model, self.data)
+        mujoco.mj_forward(self.model, self.data)
         
         # Entity registries
         self.joints: Dict[str, Joint] = {}
@@ -1357,7 +1371,7 @@ class MuJoCoSimulation:
     # ------------------------------------------------------------------------
     
     @classmethod
-    def from_builder(cls, builder: ModelBuilder) -> 'MuJoCoSimulation':
+    def from_builder(cls, builder: ModelBuilder, keep_builder_spec: bool = False) -> 'MuJoCoSimulation':
         """
         Create simulation from a ModelBuilder.
         
@@ -1375,10 +1389,12 @@ class MuJoCoSimulation:
             
             sim = MuJoCoSimulation.from_builder(builder)
         """
-        model = builder.compile()
+        model = builder.compile(keep_spec=keep_builder_spec)
         sim = cls.__new__(cls)
         sim.model = model
         sim.data = mujoco.MjData(model)
+        mujoco.mj_resetData(sim.model, sim.data)
+        mujoco.mj_forward(sim.model, sim.data)
         sim.joints = {}
         sim.bodies = {}
         sim.actuators = {}
@@ -1602,14 +1618,14 @@ def example_usage():
     sim = MuJoCoSimulation(xml_path="testing/model.xml")
     
     # 2. Register entities you care about
-    crane_joint = sim.add_joint("crane", "crane_base__up_down")
-    lift_actuator = sim.add_actuator("lift", "lift")
+    crane_joint = sim.reg_joint("crane", "crane_base__up_down")
+    lift_actuator = sim.reg_actuator("lift", "lift")
     
-    dummy_joint = sim.add_joint("dummy", "dummy__dummy_joint")
-    target_joint = sim.add_joint("target", "blue_box__blue_joint")
+    dummy_joint = sim.reg_joint("dummy", "dummy__dummy_joint")
+    target_joint = sim.reg_joint("target", "blue_box__blue_joint")
     
-    red_box = sim.add_body("red_box", "red_box")
-    green_box = sim.add_body("green_box", "green_box")
+    red_box = sim.reg_body("red_box", "red_box")
+    green_box = sim.reg_body("green_box", "green_box")
     
     # 3. Define control parameters
     target_height = 1.5
@@ -1671,5 +1687,15 @@ def parse_args():
 
 
 if __name__ == "__main__":
-    # Run example
-    example_usage()
+    args = parse_args()
+
+    if args.xml:
+        sim = MuJoCoSimulation(xml_path=args.xml)
+        sim.run(
+            passive=args.passive,
+            duration=args.duration,
+            realtime_speed=args.speed,
+        )
+    else:
+        # Fallback demo
+        example_usage()

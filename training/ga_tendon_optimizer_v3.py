@@ -1115,7 +1115,7 @@ def run_evolution(visualize: bool = False, resume: str = None, plot_stats: bool 
             passive=True,
             viewer_distance=5,
             viewer_lookat=[0, 0, 0.25],
-            realtime_speed=0.01,
+            realtime_speed=1,
             duration=GAConfig.SIM_DURATION,
             control_preset=True,
             record_video=True
@@ -1330,7 +1330,7 @@ if __name__ == "__main__":
             passive=True,
             viewer_distance=5,
             viewer_lookat=[0,0,0.25],
-            realtime_speed=0.5,
+            realtime_speed=1,
             duration=4.0,
             control_preset=True,
             record_video=args.record

@@ -180,7 +180,7 @@ class GAConfig:
     # is the mechanism that drives the real rig into self-excited oscillation when
     # damping is high (classical dead-time instability). Set to 0.0 to recover the
     # instantaneous-velocity behaviour of v2.
-    VELOCITY_DELAY = 0.02     # seconds of delay applied to tendon velocity used for damping
+    VELOCITY_DELAY = 0.5     # seconds of delay applied to tendon velocity used for damping
 
 
 
